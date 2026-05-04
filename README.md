@@ -55,6 +55,43 @@ Whisper 변환 + GPT 평가 + 모범 답안 비교
 
 ---
 
+## 주요 화면
+
+### 시작 화면
+![시작 화면](images/main_start.png)
+
+> 자소서부터 준비하거나 바로 면접 연습으로 진입할 수 있는 두 가지 경로를 제공합니다.
+
+### 자소서 생성 및 품질 평가
+![자소서 입력](images/cover_input.png)
+
+![자소서 결과](images/cover_result.png)
+
+![자소서 평가](images/cover_eval.png)
+
+> 자소서 초안을 생성하고 구체성·직무연관성·구조/논리성 세 가지 지표로 품질을 평가합니다. 수정 후 재평가도 가능합니다.
+
+### 면접 질문 및 답변 평가
+![면접 질문](images/interview_question.png)
+
+![답변 평가](images/interview_feedback.png)
+
+> GPT 평가 점수와 함께 모범 답안을 나란히 비교할 수 있습니다.
+
+### 면접 완료 리포트
+![리포트](images/report.png)
+
+> 전체 평균 점수, 카테고리별 차트, 가장 잘한 답변과 가장 부족한 답변을 한 화면에 요약합니다.
+
+### 연습 기록 및 점수 추이
+![연습 기록 목록](images/history_list.png)
+
+![연습 기록 상세](images/history_detail.png)
+
+> 카테고리별 평균 점수 차트와 질문별 반복 연습 점수 추이를 확인할 수 있습니다.
+
+---
+
 ## 주요 기능
 
 **1. 자소서 생성 + 품질 평가**
