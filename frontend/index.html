@@ -1,0 +1,1025 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mock Interview AI</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #0f1117;
+            color: #e0e0e0;
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            font-size: 1.8rem;
+            margin-bottom: 8px;
+            color: #fff;
+        }
+
+        .subtitle {
+            color: #888;
+            margin-bottom: 40px;
+            font-size: 0.9rem;
+        }
+
+        .card {
+            background: #1a1d27;
+            border: 1px solid #2a2d3a;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 20px;
+        }
+
+        .card h2 {
+            font-size: 1rem;
+            color: #aaa;
+            margin-bottom: 16px;
+        }
+
+        input[type="text"],
+        textarea {
+            width: 100%;
+            background: #0f1117;
+            border: 1px solid #2a2d3a;
+            border-radius: 8px;
+            padding: 12px;
+            color: #e0e0e0;
+            font-size: 0.9rem;
+            margin-bottom: 12px;
+        }
+
+        textarea {
+            height: 100px;
+            resize: vertical;
+        }
+
+        button {
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 600;
+            transition: opacity 0.2s;
+        }
+
+        button:hover {
+            opacity: 0.85;
+        }
+
+        .btn-primary {
+            background: #4f6ef7;
+            color: #fff;
+        }
+
+        .btn-danger {
+            background: #e74c3c;
+            color: #fff;
+        }
+
+        .btn-success {
+            background: #2ecc71;
+            color: #fff;
+        }
+
+        .btn-ghost {
+            background: transparent;
+            color: #888;
+            border: 1px solid #2a2d3a;
+            font-size: 0.85rem;
+            padding: 6px 14px;
+        }
+
+        .btn-ghost:hover {
+            color: #e0e0e0;
+            border-color: #4f6ef7;
+        }
+
+        .question-box {
+            background: #0f1117;
+            border-left: 3px solid #4f6ef7;
+            padding: 16px;
+            border-radius: 4px;
+            margin-bottom: 16px;
+            font-size: 1rem;
+            line-height: 1.6;
+        }
+
+        .category-badge {
+            display: inline-block;
+            padding: 2px 10px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            margin-bottom: 8px;
+        }
+
+        .input-options {
+            display: flex;
+            gap: 16px;
+            margin-top: 8px;
+        }
+
+        .option-btn {
+            flex: 1;
+            padding: 20px;
+            background: #0f1117;
+            border: 2px solid #2a2d3a;
+            border-radius: 12px;
+            cursor: pointer;
+            text-align: center;
+            transition: border-color 0.2s, background 0.2s;
+        }
+
+        .option-btn:hover {
+            border-color: #4f6ef7;
+            background: #141722;
+        }
+
+        .option-icon {
+            font-size: 2rem;
+            margin-bottom: 8px;
+        }
+
+        .option-label {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #e0e0e0;
+        }
+
+        .option-desc {
+            font-size: 0.8rem;
+            color: #666;
+            margin-top: 4px;
+        }
+
+        .back-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+
+        .record-section {
+            text-align: center;
+            padding: 12px 0;
+        }
+
+        .record-btn {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            font-size: 2rem;
+            margin: 12px 0;
+        }
+
+        .recording {
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(231, 76, 60, 0.4);
+            }
+
+            70% {
+                box-shadow: 0 0 0 15px rgba(231, 76, 60, 0);
+            }
+
+            100% {
+                box-shadow: 0 0 0 0 rgba(231, 76, 60, 0);
+            }
+        }
+
+        .timer {
+            font-size: 1.5rem;
+            color: #e74c3c;
+            margin-bottom: 4px;
+        }
+
+        #visualizer {
+            width: 100%;
+            height: 60px;
+            border-radius: 8px;
+            margin: 8px 0;
+            display: block;
+        }
+
+        .transcript-box {
+            background: #0f1117;
+            border: 1px solid #2a2d3a;
+            border-radius: 8px;
+            padding: 12px;
+            margin: 12px 0;
+        }
+
+        .transcript-label {
+            font-size: 0.75rem;
+            color: #666;
+            margin-bottom: 6px;
+        }
+
+        #transcriptText {
+            width: 100%;
+            background: transparent;
+            border: none;
+            color: #e0e0e0;
+            font-size: 0.9rem;
+            line-height: 1.6;
+            resize: vertical;
+            min-height: 80px;
+            outline: none;
+        }
+
+        .duration-badge {
+            display: inline-block;
+            background: #1a2a3a;
+            color: #4f9ef7;
+            border-radius: 6px;
+            padding: 3px 10px;
+            font-size: 0.8rem;
+            margin-bottom: 10px;
+        }
+
+        .file-section {
+            padding: 12px 0;
+        }
+
+        .score-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .score-item {
+            text-align: center;
+        }
+
+        .score-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #4f6ef7;
+        }
+
+        .score-label {
+            font-size: 0.75rem;
+            color: #888;
+            margin-top: 4px;
+        }
+
+        .feedback-box {
+            background: #0f1117;
+            border-left: 3px solid #2ecc71;
+            padding: 12px 16px;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+
+        .answer-text {
+            background: #0f1117;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            color: #aaa;
+            margin-bottom: 16px;
+            line-height: 1.6;
+        }
+
+        .status {
+            color: #888;
+            font-size: 0.85rem;
+            margin-top: 8px;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .nav-btns {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            margin-top: 16px;
+        }
+
+        select {
+            width: 100%;
+            background: #0f1117;
+            border: 1px solid #2a2d3a;
+            border-radius: 8px;
+            padding: 10px;
+            color: #e0e0e0;
+            font-size: 0.85rem;
+            margin-bottom: 12px;
+        }
+
+        /* 히스토리 전용 스타일 */
+        .header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 40px;
+        }
+
+        .session-item {
+            background: #0f1117;
+            border: 1px solid #2a2d3a;
+            border-radius: 10px;
+            padding: 16px 20px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            transition: border-color 0.2s;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .session-item:hover {
+            border-color: #4f6ef7;
+        }
+
+        .session-info .company {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #e0e0e0;
+        }
+
+        .session-info .position {
+            font-size: 0.82rem;
+            color: #888;
+            margin-top: 3px;
+        }
+
+        .session-info .date {
+            font-size: 0.78rem;
+            color: #555;
+            margin-top: 4px;
+        }
+
+        .session-stats {
+            text-align: right;
+        }
+
+        .session-stats .stat {
+            font-size: 0.82rem;
+            color: #666;
+        }
+
+        .session-stats .stat span {
+            color: #4f6ef7;
+            font-weight: 600;
+        }
+
+        .empty-msg {
+            text-align: center;
+            color: #555;
+            padding: 40px 0;
+            font-size: 0.9rem;
+        }
+
+        .question-history-item {
+            border: 1px solid #2a2d3a;
+            border-radius: 10px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+
+        .question-history-item .q-text {
+            font-size: 0.92rem;
+            line-height: 1.6;
+            color: #ccc;
+            margin-bottom: 12px;
+        }
+
+        .attempt-row {
+            background: #0f1117;
+            border-radius: 8px;
+            padding: 10px 14px;
+            margin-bottom: 8px;
+        }
+
+        .attempt-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+
+        .attempt-num {
+            font-size: 0.78rem;
+            color: #666;
+        }
+
+        .attempt-scores {
+            display: flex;
+            gap: 12px;
+        }
+
+        .attempt-score {
+            font-size: 0.8rem;
+            color: #888;
+        }
+
+        .attempt-score span {
+            color: #4f6ef7;
+            font-weight: 600;
+        }
+
+        .attempt-feedback {
+            font-size: 0.8rem;
+            color: #666;
+            line-height: 1.5;
+            margin-top: 4px;
+            border-left: 2px solid #2a2d3a;
+            padding-left: 8px;
+        }
+
+        .chart-wrap {
+            margin-top: 12px;
+        }
+
+        .chart-title {
+            font-size: 0.78rem;
+            color: #666;
+            margin-bottom: 6px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <!-- 헤더 -->
+        <div class="header-row">
+            <div>
+                <h1>🎤 Mock Interview AI</h1>
+                <p class="subtitle">AI 기반 모의 면접 연습 플랫폼</p>
+            </div>
+            <button class="btn-ghost" onclick="goHistory()">📂 연습 기록</button>
+        </div>
+
+        <!-- ───────────── 면접 화면 ───────────── -->
+        <div id="interviewView">
+            <div class="card" id="setupCard">
+                <h2>📋 면접 설정</h2>
+                <input type="text" id="jobUrl" placeholder="채용공고 URL (예: https://www.wanted.co.kr/wd/353354)">
+                <textarea id="resumeText" placeholder="이력서 텍스트를 붙여넣으세요..."></textarea>
+                <button class="btn-primary" onclick="startSession()">면접 시작</button>
+                <p class="status" id="setupStatus"></p>
+            </div>
+
+            <div class="card hidden" id="questionCard">
+                <h2>💬 면접 질문 <span id="questionProgress"></span></h2>
+                <div id="categoryBadge" class="category-badge"></div>
+                <div class="question-box" id="questionText"></div>
+                <div id="inputMethodSelect">
+                    <p style="font-size:0.85rem; color:#888; margin-bottom:12px;">답변 방식을 선택하세요</p>
+                    <div class="input-options">
+                        <div class="option-btn" onclick="selectInputMethod('mic')">
+                            <div class="option-icon">🎙️</div>
+                            <div class="option-label">마이크 녹음</div>
+                            <div class="option-desc">직접 말하며 연습</div>
+                        </div>
+                        <div class="option-btn" onclick="selectInputMethod('file')">
+                            <div class="option-icon">📁</div>
+                            <div class="option-label">파일 업로드</div>
+                            <div class="option-desc">mp3, wav, m4a</div>
+                        </div>
+                    </div>
+                </div>
+                <div id="micSection" class="hidden">
+                    <div class="back-row">
+                        <button class="btn-ghost" onclick="backToMethodSelect()">← 뒤로</button>
+                        <span style="font-size:0.8rem; color:#666;">마이크 녹음</span>
+                    </div>
+                    <select id="micSelect"></select>
+                    <div class="record-section">
+                        <div class="timer hidden" id="timer">00:00</div>
+                        <canvas id="visualizer" class="hidden"></canvas>
+                        <button class="record-btn btn-danger" id="recordBtn" onclick="toggleRecord()">🎙️</button>
+                        <p class="status" id="recordStatus">버튼을 눌러 답변 녹음을 시작하세요</p>
+                    </div>
+                    <div id="transcriptSection" class="hidden">
+                        <div class="duration-badge" id="durationBadge">🕐 녹음 시간: --</div>
+                        <div class="transcript-box">
+                            <div class="transcript-label">📝 인식된 텍스트 (수정 가능)</div>
+                            <textarea id="transcriptText" placeholder="Whisper 변환 중..."></textarea>
+                        </div>
+                        <button class="btn-primary" style="width:100%;" onclick="submitTranscript()">이 내용으로
+                            평가받기</button>
+                    </div>
+                </div>
+                <div id="fileSection" class="hidden">
+                    <div class="back-row">
+                        <button class="btn-ghost" onclick="backToMethodSelect()">← 뒤로</button>
+                        <span style="font-size:0.8rem; color:#666;">파일 업로드</span>
+                    </div>
+                    <div class="file-section">
+                        <input type="file" id="audioFile" accept="audio/*"
+                            style="width:100%; background:#0f1117; border:1px solid #2a2d3a; border-radius:8px; padding:10px; color:#e0e0e0; font-size:0.85rem;">
+                        <button class="btn-success" style="margin-top:10px; width:100%;"
+                            onclick="submitFileAnswer()">파일로 평가받기</button>
+                    </div>
+                </div>
+                <p class="status" id="submitStatus"></p>
+            </div>
+
+            <div class="card hidden" id="feedbackCard">
+                <h2>📊 답변 평가</h2>
+                <div class="answer-text" id="answerText"></div>
+                <div class="score-grid">
+                    <div class="score-item">
+                        <div class="score-value" id="logicScore">-</div>
+                        <div class="score-label">논리성</div>
+                    </div>
+                    <div class="score-item">
+                        <div class="score-value" id="specificityScore">-</div>
+                        <div class="score-label">구체성</div>
+                    </div>
+                    <div class="score-item">
+                        <div class="score-value" id="timeScore">-</div>
+                        <div class="score-label">시간 관리</div>
+                    </div>
+                    <div class="score-item">
+                        <div class="score-value" id="totalScore">-</div>
+                        <div class="score-label">총점 /15</div>
+                    </div>
+                </div>
+                <div class="feedback-box" id="feedbackText"></div>
+                <div class="nav-btns" style="margin-top:16px;">
+                    <button class="btn-primary" onclick="nextQuestion()">다음 질문 →</button>
+                </div>
+            </div>
+
+            <div class="card hidden" id="doneCard">
+                <h2>🎉 면접 완료</h2>
+                <p style="color:#aaa; line-height:1.8;">모든 질문에 답변했습니다.<br>수고하셨습니다!</p>
+                <div class="nav-btns" style="margin-top:16px;">
+                    <button class="btn-ghost" onclick="goHistory()">📂 연습 기록 보기</button>
+                    <button class="btn-primary" onclick="location.reload()">다시 시작</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ───────────── 히스토리: 세션 목록 ───────────── -->
+        <div id="historyListView" class="hidden">
+            <div class="card">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+                    <h2 style="margin:0;">📂 연습 기록</h2>
+                    <button class="btn-ghost" onclick="goInterview()">← 면접으로</button>
+                </div>
+                <div id="sessionList"></div>
+            </div>
+        </div>
+
+        <!-- ───────────── 히스토리: 세션 상세 ───────────── -->
+        <div id="historyDetailView" class="hidden">
+            <div class="card">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                    <div>
+                        <h2 style="margin:0; font-size:1.1rem; color:#e0e0e0;" id="detailTitle"></h2>
+                        <p style="font-size:0.8rem; color:#666; margin-top:4px;" id="detailDate"></p>
+                    </div>
+                    <button class="btn-ghost" onclick="goHistoryList()">← 목록으로</button>
+                </div>
+                <div id="questionHistoryList"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API = 'http://localhost:8000/api/v1';
+        let questions = [];
+        let currentIdx = 0;
+        let mediaRecorder = null;
+        let audioChunks = [];
+        let isRecording = false;
+        let timerInterval = null;
+        let seconds = 0;
+        let currentAudioBlob = null;
+        let mimeType = '';
+        let audioContext = null;
+        let analyser = null;
+        let animationId = null;
+        let recordedDuration = 0;
+        let chartInstances = {};
+
+        // ───────── 화면 전환 ─────────
+        function goHistory() {
+            document.getElementById('interviewView').classList.add('hidden');
+            document.getElementById('historyDetailView').classList.add('hidden');
+            document.getElementById('historyListView').classList.remove('hidden');
+            loadSessionList();
+        }
+
+        function goHistoryList() {
+            document.getElementById('historyDetailView').classList.add('hidden');
+            document.getElementById('historyListView').classList.remove('hidden');
+            loadSessionList();
+        }
+
+        function goInterview() {
+            document.getElementById('historyListView').classList.add('hidden');
+            document.getElementById('historyDetailView').classList.add('hidden');
+            document.getElementById('interviewView').classList.remove('hidden');
+        }
+
+        // ───────── 세션 목록 ─────────
+        async function loadSessionList() {
+            const container = document.getElementById('sessionList');
+            container.innerHTML = '<p class="empty-msg">불러오는 중...</p>';
+            try {
+                const res = await fetch(`${API}/sessions`);
+                const sessions = await res.json();
+                if (!sessions.length) {
+                    container.innerHTML = '<p class="empty-msg">연습 기록이 없습니다</p>';
+                    return;
+                }
+                container.innerHTML = sessions.map(s => `
+                    <div class="session-item" onclick="loadSessionDetail(${s.id})">
+                        <div class="session-info">
+                            <div class="company">${s.company || '회사 미확인'} ${s.position ? '· ' + s.position : ''}</div>
+                            <div class="position">${s.job_url.length > 50 ? s.job_url.slice(0, 50) + '...' : s.job_url}</div>
+                            <div class="date">${formatDate(s.created_at)}</div>
+                        </div>
+                        <div class="session-stats">
+                            <div class="stat">질문 <span>${s.question_count}</span>개</div>
+                            <div class="stat">답변 <span>${s.answer_count}</span>회</div>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (e) {
+                container.innerHTML = '<p class="empty-msg">불러오기 실패: ' + e.message + '</p>';
+            }
+        }
+
+        // ───────── 세션 상세 ─────────
+        async function loadSessionDetail(sessionId) {
+            document.getElementById('historyListView').classList.add('hidden');
+            document.getElementById('historyDetailView').classList.remove('hidden');
+            document.getElementById('questionHistoryList').innerHTML = '<p class="empty-msg">불러오는 중...</p>';
+
+            // 기존 차트 인스턴스 제거
+            Object.values(chartInstances).forEach(c => c.destroy());
+            chartInstances = {};
+
+            try {
+                const res = await fetch(`${API}/sessions/${sessionId}/history`);
+                const data = await res.json();
+
+                document.getElementById('detailTitle').textContent =
+                    `${data.company || '회사 미확인'}${data.position ? ' · ' + data.position : ''}`;
+                document.getElementById('detailDate').textContent = formatDate(data.created_at);
+
+                const container = document.getElementById('questionHistoryList');
+                if (!data.questions.length) {
+                    container.innerHTML = '<p class="empty-msg">질문이 없습니다</p>';
+                    return;
+                }
+
+                container.innerHTML = data.questions.map((q, qi) => {
+                    const hasAnswers = q.answers && q.answers.length > 0;
+                    const attemptsHtml = hasAnswers ? q.answers.map((a, ai) => {
+                        const ev = a.evaluation;
+                        const scores = ev
+                            ? `<div class="attempt-scores">
+                                <div class="attempt-score">논리 <span>${ev.logic_score}</span></div>
+                                <div class="attempt-score">구체성 <span>${ev.specificity_score}</span></div>
+                                <div class="attempt-score">시간 <span>${ev.time_score}</span></div>
+                                <div class="attempt-score">총점 <span>${ev.total_score}/15</span></div>
+                               </div>`
+                            : '<div class="attempt-score" style="color:#555;">평가 없음</div>';
+                        const feedback = ev && ev.feedback
+                            ? `<div class="attempt-feedback">💬 ${ev.feedback}</div>` : '';
+                        return `
+                            <div class="attempt-row">
+                                <div class="attempt-header">
+                                    <span class="attempt-num">${ai + 1}번째 시도 · ${formatDate(a.created_at)}</span>
+                                </div>
+                                ${scores}
+                                ${feedback}
+                            </div>`;
+                    }).join('') : '<p style="font-size:0.82rem; color:#555; padding:8px 0;">아직 답변이 없습니다</p>';
+
+                    const chartHtml = hasAnswers && q.answers.filter(a => a.evaluation).length > 1
+                        ? `<div class="chart-wrap"><div class="chart-title">총점 추이</div><canvas id="chart_${q.id}" height="80"></canvas></div>`
+                        : '';
+
+                    return `
+                        <div class="question-history-item">
+                            <div style="display:flex; gap:8px; align-items:center; margin-bottom:8px;">
+                                <span class="category-badge" style="${categoryStyle(q.category)}">${q.category}</span>
+                            </div>
+                            <div class="q-text">${q.question_text}</div>
+                            ${attemptsHtml}
+                            ${chartHtml}
+                        </div>`;
+                }).join('');
+
+                // 차트 그리기
+                data.questions.forEach(q => {
+                    const evaluated = q.answers.filter(a => a.evaluation);
+                    if (evaluated.length > 1) {
+                        const ctx = document.getElementById(`chart_${q.id}`);
+                        if (ctx) {
+                            chartInstances[q.id] = new Chart(ctx, {
+                                type: 'line',
+                                data: {
+                                    labels: evaluated.map((_, i) => `${i + 1}회`),
+                                    datasets: [{
+                                        label: '총점',
+                                        data: evaluated.map(a => a.evaluation.total_score),
+                                        borderColor: '#4f6ef7',
+                                        backgroundColor: 'rgba(79,110,247,0.1)',
+                                        tension: 0.3,
+                                        pointRadius: 4,
+                                        pointBackgroundColor: '#4f6ef7',
+                                    }]
+                                },
+                                options: {
+                                    responsive: true,
+                                    scales: {
+                                        y: { min: 0, max: 15, ticks: { color: '#666', stepSize: 5 }, grid: { color: '#1a1d27' } },
+                                        x: { ticks: { color: '#666' }, grid: { display: false } }
+                                    },
+                                    plugins: { legend: { display: false } }
+                                }
+                            });
+                        }
+                    }
+                });
+
+            } catch (e) {
+                document.getElementById('questionHistoryList').innerHTML = '<p class="empty-msg">불러오기 실패: ' + e.message + '</p>';
+            }
+        }
+
+        // ───────── 유틸 ─────────
+        function formatDate(isoStr) {
+            if (!isoStr) return '';
+            const d = new Date(isoStr);
+            return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+        }
+
+        function categoryStyle(cat) {
+            if (cat === '보유 스킬') return 'background:#1a3a1a; color:#2ecc71;';
+            if (cat === '부족 스킬') return 'background:#3a1a1a; color:#e74c3c;';
+            if (cat.includes('직무')) return 'background:#1a1a3a; color:#4f6ef7;';
+            return 'background:#3a3a1a; color:#f39c12;';
+        }
+
+        // ───────── 기존 면접 로직 ─────────
+        async function loadMicrophones() {
+            try {
+                await navigator.mediaDevices.getUserMedia({ audio: true });
+                const devices = await navigator.mediaDevices.enumerateDevices();
+                const mics = devices.filter(d => d.kind === 'audioinput');
+                const select = document.getElementById('micSelect');
+                select.innerHTML = '';
+                mics.forEach(mic => {
+                    const option = document.createElement('option');
+                    option.value = mic.deviceId;
+                    option.textContent = mic.label || `마이크 ${mic.deviceId.slice(0, 8)}`;
+                    select.appendChild(option);
+                });
+            } catch (e) { console.error(e); }
+        }
+        window.addEventListener('load', loadMicrophones);
+
+        async function startSession() {
+            const jobUrl = document.getElementById('jobUrl').value.trim();
+            const resumeText = document.getElementById('resumeText').value.trim();
+            if (!jobUrl || !resumeText) { alert('URL과 이력서를 모두 입력해주세요'); return; }
+            document.getElementById('setupStatus').textContent = '분석 중... (30초 정도 걸려요)';
+            try {
+                const res = await fetch(`${API}/sessions`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ job_url: jobUrl, resume_text: resumeText })
+                });
+                const data = await res.json();
+                questions = data.questions;
+                document.getElementById('setupCard').classList.add('hidden');
+                showQuestion();
+            } catch (e) {
+                document.getElementById('setupStatus').textContent = '오류 발생: ' + e.message;
+            }
+        }
+
+        function showQuestion() {
+            if (currentIdx >= questions.length) {
+                document.getElementById('questionCard').classList.add('hidden');
+                document.getElementById('doneCard').classList.remove('hidden');
+                return;
+            }
+            const q = questions[currentIdx];
+            document.getElementById('questionProgress').textContent = `(${currentIdx + 1}/${questions.length})`;
+            document.getElementById('questionText').textContent = q.question_text;
+            const badge = document.getElementById('categoryBadge');
+            badge.textContent = q.category;
+            badge.style.cssText = categoryStyle(q.category);
+            document.getElementById('inputMethodSelect').classList.remove('hidden');
+            document.getElementById('micSection').classList.add('hidden');
+            document.getElementById('fileSection').classList.add('hidden');
+            document.getElementById('transcriptSection').classList.add('hidden');
+            document.getElementById('feedbackCard').classList.add('hidden');
+            document.getElementById('recordStatus').textContent = '버튼을 눌러 답변 녹음을 시작하세요';
+            document.getElementById('submitStatus').textContent = '';
+            document.getElementById('timer').classList.add('hidden');
+            document.getElementById('visualizer').classList.add('hidden');
+            currentAudioBlob = null;
+            seconds = 0;
+            document.getElementById('questionCard').classList.remove('hidden');
+        }
+
+        function selectInputMethod(method) {
+            document.getElementById('inputMethodSelect').classList.add('hidden');
+            if (method === 'mic') document.getElementById('micSection').classList.remove('hidden');
+            else document.getElementById('fileSection').classList.remove('hidden');
+        }
+
+        function backToMethodSelect() {
+            document.getElementById('micSection').classList.add('hidden');
+            document.getElementById('fileSection').classList.add('hidden');
+            document.getElementById('transcriptSection').classList.add('hidden');
+            document.getElementById('inputMethodSelect').classList.remove('hidden');
+            if (isRecording) {
+                mediaRecorder.stop();
+                mediaRecorder.stream.getTracks().forEach(t => t.stop());
+                isRecording = false;
+                clearInterval(timerInterval);
+                cancelAnimationFrame(animationId);
+                if (audioContext) { audioContext.close(); audioContext = null; }
+                document.getElementById('recordBtn').classList.remove('recording');
+                document.getElementById('recordBtn').textContent = '🎙️';
+            }
+        }
+
+        function drawVisualizer() {
+            const canvas = document.getElementById('visualizer');
+            canvas.width = canvas.offsetWidth || 600;
+            canvas.height = 60;
+            const ctx = canvas.getContext('2d');
+            const bufferLength = analyser.frequencyBinCount;
+            const dataArray = new Uint8Array(bufferLength);
+            function draw() {
+                animationId = requestAnimationFrame(draw);
+                analyser.getByteFrequencyData(dataArray);
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                const barWidth = (canvas.width / bufferLength) * 1.2;
+                let x = 0;
+                for (let i = 0; i < bufferLength; i++) {
+                    const barHeight = (dataArray[i] / 255) * canvas.height;
+                    const intensity = dataArray[i] / 255;
+                    ctx.fillStyle = `rgba(${Math.floor(79 + intensity * 100)}, ${Math.floor(110 + intensity * 50)}, 247, 0.85)`;
+                    ctx.beginPath();
+                    ctx.roundRect(x, canvas.height - barHeight, Math.max(barWidth - 1, 1), barHeight, 2);
+                    ctx.fill();
+                    x += barWidth + 1;
+                }
+            }
+            draw();
+        }
+
+        async function toggleRecord() {
+            if (!isRecording) {
+                const deviceId = document.getElementById('micSelect').value;
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    audio: deviceId ? { deviceId: { exact: deviceId } } : true
+                });
+                mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' :
+                    MediaRecorder.isTypeSupported('audio/ogg;codecs=opus') ? 'audio/ogg;codecs=opus' : 'audio/webm';
+                mediaRecorder = new MediaRecorder(stream, { mimeType, audioBitsPerSecond: 128000 });
+                audioChunks = [];
+                mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+                mediaRecorder.onstop = async () => {
+                    currentAudioBlob = new Blob(audioChunks, { type: mimeType });
+                    recordedDuration = seconds;
+                    await processRecording();
+                };
+                mediaRecorder.start();
+                isRecording = true;
+                seconds = 0;
+                audioContext = new AudioContext();
+                analyser = audioContext.createAnalyser();
+                analyser.fftSize = 128;
+                const source = audioContext.createMediaStreamSource(stream);
+                source.connect(analyser);
+                document.getElementById('visualizer').classList.remove('hidden');
+                drawVisualizer();
+                document.getElementById('recordBtn').classList.add('recording');
+                document.getElementById('recordBtn').textContent = '⏹️';
+                document.getElementById('recordStatus').textContent = '녹음 중...';
+                document.getElementById('timer').classList.remove('hidden');
+                timerInterval = setInterval(() => {
+                    seconds++;
+                    const m = String(Math.floor(seconds / 60)).padStart(2, '0');
+                    const s = String(seconds % 60).padStart(2, '0');
+                    document.getElementById('timer').textContent = `${m}:${s}`;
+                }, 1000);
+            } else {
+                mediaRecorder.stop();
+                mediaRecorder.stream.getTracks().forEach(t => t.stop());
+                isRecording = false;
+                clearInterval(timerInterval);
+                cancelAnimationFrame(animationId);
+                if (audioContext) { audioContext.close(); audioContext = null; }
+                document.getElementById('recordBtn').classList.remove('recording');
+                document.getElementById('recordBtn').textContent = '🎙️';
+                document.getElementById('recordStatus').textContent = '변환 중...';
+                document.getElementById('timer').classList.add('hidden');
+                document.getElementById('visualizer').classList.add('hidden');
+            }
+        }
+
+        async function processRecording() {
+            const formData = new FormData();
+            formData.append('audio', currentAudioBlob, 'answer.webm');
+            try {
+                const q = questions[currentIdx];
+                const res = await fetch(`${API}/questions/${q.id}/answers`, { method: 'POST', body: formData });
+                const data = await res.json();
+                const m = String(Math.floor(recordedDuration / 60)).padStart(2, '0');
+                const s = String(recordedDuration % 60).padStart(2, '0');
+                document.getElementById('durationBadge').textContent = `🕐 녹음 시간: ${m}:${s}`;
+                document.getElementById('transcriptText').value = data.answer_text;
+                document.getElementById('transcriptSection').classList.remove('hidden');
+                document.getElementById('recordStatus').textContent = '텍스트를 확인하고 수정 후 평가받으세요';
+                document.getElementById('transcriptSection').dataset.answerId = data.answer_id;
+            } catch (e) {
+                document.getElementById('recordStatus').textContent = '오류: ' + e.message;
+            }
+        }
+
+        async function submitTranscript() {
+            const editedText = document.getElementById('transcriptText').value.trim();
+            if (!editedText) { alert('텍스트를 입력해주세요'); return; }
+            document.getElementById('submitStatus').textContent = '평가 중...';
+            try {
+                const q = questions[currentIdx];
+                const res = await fetch(`${API}/evaluate-text`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ question_id: q.id, answer_text: editedText, duration_seconds: recordedDuration })
+                });
+                const feedback = await res.json();
+                showFeedback(feedback);
+            } catch (e) {
+                document.getElementById('submitStatus').textContent = '오류: ' + e.message;
+            }
+        }
+
+        async function submitFileAnswer() {
+            const fileInput = document.getElementById('audioFile');
+            if (!fileInput.files[0]) { alert('파일을 선택해주세요'); return; }
+            document.getElementById('submitStatus').textContent = '분석 중...';
+            const formData = new FormData();
+            formData.append('audio', fileInput.files[0]);
+            try {
+                const q = questions[currentIdx];
+                const res = await fetch(`${API}/questions/${q.id}/answers`, { method: 'POST', body: formData });
+                const data = await res.json();
+                const feedbackRes = await fetch(`${API}/answers/${data.answer_id}/feedback`);
+                const feedback = await feedbackRes.json();
+                showFeedback(feedback);
+            } catch (e) {
+                document.getElementById('submitStatus').textContent = '오류: ' + e.message;
+            }
+        }
+
+        function showFeedback(feedback) {
+            document.getElementById('answerText').textContent = `"${feedback.answer_text}"`;
+            document.getElementById('logicScore').textContent = feedback.logic_score;
+            document.getElementById('specificityScore').textContent = feedback.specificity_score;
+            document.getElementById('timeScore').textContent = feedback.time_score;
+            document.getElementById('totalScore').textContent = feedback.total_score;
+            document.getElementById('feedbackText').textContent = `💬 ${feedback.feedback}`;
+            document.getElementById('feedbackCard').classList.remove('hidden');
+            document.getElementById('submitStatus').textContent = '';
+        }
+
+        function nextQuestion() {
+            currentIdx++;
+            document.getElementById('feedbackCard').classList.add('hidden');
+            showQuestion();
+        }
+    </script>
+</body>
+
+</html>
