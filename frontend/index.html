@@ -699,30 +699,29 @@
                     <button class="btn-primary" onclick="location.reload()">다시 시작</button>
                 </div>
             </div>
-
-            <!-- ───────────── 히스토리: 세션 목록 ───────────── -->
-            <div id="historyListView" class="hidden">
-                <div class="card">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
-                        <h2 style="margin:0;">📂 연습 기록</h2>
-                        <button class="btn-ghost" onclick="goInterview()">← 면접으로</button>
-                    </div>
-                    <div id="sessionList"></div>
+        </div>
+        <!-- ───────────── 히스토리: 세션 목록 ───────────── -->
+        <div id="historyListView" class="hidden">
+            <div class="card">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+                    <h2 style="margin:0;">📂 연습 기록</h2>
+                    <button class="btn-ghost" onclick="goInterview()">← 면접으로</button>
                 </div>
+                <div id="sessionList"></div>
             </div>
+        </div>
 
-            <!-- ───────────── 히스토리: 세션 상세 ───────────── -->
-            <div id="historyDetailView" class="hidden">
-                <div class="card">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-                        <div>
-                            <h2 style="margin:0; font-size:1.1rem; color:#e0e0e0;" id="detailTitle"></h2>
-                            <p style="font-size:0.8rem; color:#666; margin-top:4px;" id="detailDate"></p>
-                        </div>
-                        <button class="btn-ghost" onclick="goHistoryList()">← 목록으로</button>
+        <!-- ───────────── 히스토리: 세션 상세 ───────────── -->
+        <div id="historyDetailView" class="hidden">
+            <div class="card">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                    <div>
+                        <h2 style="margin:0; font-size:1.1rem; color:#e0e0e0;" id="detailTitle"></h2>
+                        <p style="font-size:0.8rem; color:#666; margin-top:4px;" id="detailDate"></p>
                     </div>
-                    <div id="questionHistoryList"></div>
+                    <button class="btn-ghost" onclick="goHistoryList()">← 목록으로</button>
                 </div>
+                <div id="questionHistoryList"></div>
             </div>
         </div>
 
@@ -883,6 +882,9 @@
             function goHistory() {
                 document.getElementById('interviewView').classList.add('hidden');
                 document.getElementById('historyDetailView').classList.add('hidden');
+                document.getElementById('coverCard').classList.add('hidden');
+                document.getElementById('coverResultCard').classList.add('hidden');
+                document.getElementById('startCard').classList.add('hidden');
                 document.getElementById('historyListView').classList.remove('hidden');
                 loadSessionList();
             }
@@ -897,6 +899,7 @@
                 document.getElementById('historyListView').classList.add('hidden');
                 document.getElementById('historyDetailView').classList.add('hidden');
                 document.getElementById('interviewView').classList.remove('hidden');
+                document.getElementById('startCard').classList.remove('hidden');
             }
 
             // ───────── 세션 목록 ─────────
