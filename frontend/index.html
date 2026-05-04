@@ -476,14 +476,94 @@
 
         <!-- ───────────── 면접 화면 ───────────── -->
         <div id="interviewView">
-            <div class="card" id="setupCard">
-                <h2>📋 면접 설정</h2>
-                <input type="text" id="jobUrl" placeholder="채용공고 URL (예: https://www.wanted.co.kr/wd/353354)">
-                <textarea id="resumeText" placeholder="이력서 텍스트를 붙여넣으세요..."></textarea>
-                <button class="btn-primary" onclick="startSession()">면접 시작</button>
-                <p class="status" id="setupStatus"></p>
+            <!-- 시작 화면 -->
+            <div class="card" id="startCard">
+                <h2>🚀 무엇을 시작하시겠어요?</h2>
+                <div class="input-options" style="margin-top:8px;">
+                    <div class="option-btn" onclick="selectMode('cover')">
+                        <div class="option-icon">📝</div>
+                        <div class="option-label">자소서 먼저 작성</div>
+                        <div class="option-desc">공고 분석 → 자소서 → 면접 연습</div>
+                    </div>
+                    <div class="option-btn" onclick="selectMode('interview')">
+                        <div class="option-icon">🎤</div>
+                        <div class="option-label">바로 면접 연습</div>
+                        <div class="option-desc">공고 URL + 이력서 → 면접 시작</div>
+                    </div>
+                </div>
             </div>
 
+            <!-- 자소서 경로 -->
+            <div class="card hidden" id="coverCard">
+                <h2>📝 자소서 작성</h2>
+                <input type="text" id="coverJobUrl" placeholder="채용공고 URL">
+                <textarea id="coverResumeText" placeholder="이력서 텍스트를 붙여넣으세요..."></textarea>
+                <div style="display:flex; gap:8px; align-items:center; margin-bottom:12px;">
+                    <label style="font-size:0.85rem; color:#888; white-space:nowrap;">자소서 길이</label>
+                    <input type="range" id="coverLength" min="200" max="1000" step="100" value="500"
+                        style="flex:1; accent-color:#4f6ef7;"
+                        oninput="document.getElementById('coverLengthVal').textContent = this.value + '자'">
+                    <span id="coverLengthVal" style="font-size:0.85rem; color:#4f6ef7; white-space:nowrap;">500자</span>
+                </div>
+                <textarea id="coverCustomFormat"
+                    placeholder="비워두면 기본 형식으로 생성됩니다.&#10;&#10;커스텀 형식 예시:&#10;1. 지원동기&#10;2. 성장과정&#10;3. 직무 관련 경험&#10;4. 입사 후 포부"
+                    style="height:80px;"></textarea>
+                <div style="display:flex; gap:8px;">
+                    <button class="btn-ghost" onclick="selectMode(null)">← 뒤로</button>
+                    <button class="btn-primary" style="flex:1;" onclick="startCoverLetter()">자소서 생성</button>
+                </div>
+                <p class="status" id="coverStatus"></p>
+            </div>
+
+            <!-- 자소서 결과 -->
+            <div class="card hidden" id="coverResultCard">
+                <h2>📄 자소서 초안</h2>
+                <p style="font-size:0.85rem; color:#888; margin-bottom:16px;">✏️ 각 항목을 직접 수정할 수 있습니다. 수정 후 품질 평가를 다시
+                    받아보세요.</p>
+                <div id="coverResultContent"></div>
+                <div style="margin-top:16px;">
+                    <div style="font-size:0.85rem; color:#888; margin-bottom:8px;">📊 자소서 품질 평가</div>
+                    <div id="coverEvalResult" class="hidden">
+                        <div class="score-grid" style="grid-template-columns: repeat(4,1fr);">
+                            <div class="score-item">
+                                <div class="score-value" id="evalSpecificity">-</div>
+                                <div class="score-label">구체성</div>
+                            </div>
+                            <div class="score-item">
+                                <div class="score-value" id="evalRelevance">-</div>
+                                <div class="score-label">직무연관성</div>
+                            </div>
+                            <div class="score-item">
+                                <div class="score-value" id="evalStructure">-</div>
+                                <div class="score-label">구조/논리</div>
+                            </div>
+                            <div class="score-item">
+                                <div class="score-value" id="evalTotal">-</div>
+                                <div class="score-label">총점 /30</div>
+                            </div>
+                        </div>
+                        <div class="feedback-box" id="evalFeedback" style="margin-top:8px;"></div>
+                    </div>
+                    <button class="btn-ghost" style="width:100%; margin-top:8px;" onclick="evaluateCoverLetter()">품질 평가
+                        받기</button>
+                </div>
+                <div class="nav-btns" style="margin-top:16px;">
+                    <button class="btn-ghost" onclick="backToCoverEdit()">← 다시 작성</button>
+                    <button class="btn-primary" onclick="goToInterviewFromCover()">🎤 이 자소서로 면접 보기 →</button>
+                </div>
+            </div>
+
+            <!-- 면접 직행 경로 -->
+            <div class="card hidden" id="setupCard">
+                <h2>🎤 면접 설정</h2>
+                <input type="text" id="jobUrl" placeholder="채용공고 URL (예: https://www.wanted.co.kr/wd/353354)">
+                <textarea id="resumeText" placeholder="이력서 텍스트를 붙여넣으세요..."></textarea>
+                <div style="display:flex; gap:8px;">
+                    <button class="btn-ghost" onclick="selectMode(null)">← 뒤로</button>
+                    <button class="btn-primary" style="flex:1;" onclick="startSession()">면접 시작</button>
+                </div>
+                <p class="status" id="setupStatus"></p>
+            </div>
             <div class="card hidden" id="questionCard">
                 <h2>💬 면접 질문 <span id="questionProgress"></span></h2>
                 <div id="categoryBadge" class="category-badge"></div>
@@ -571,7 +651,6 @@
                         </div>
                     </div>
                 </div>
-
                 <div class="nav-btns" style="margin-top:16px;">
                     <button class="btn-primary" onclick="nextQuestion()">다음 질문 →</button>
                 </div>
@@ -581,7 +660,6 @@
                 <h2>🎉 면접 완료</h2>
                 <div id="reportLoading" style="text-align:center; color:#888; padding:20px 0;">리포트 생성 중...</div>
                 <div id="reportContent" class="hidden">
-                    <!-- 전체 점수 -->
                     <div
                         style="text-align:center; padding:16px 0; margin-bottom:16px; border-bottom:1px solid #2a2d3a;">
                         <div style="font-size:0.82rem; color:#888; margin-bottom:6px;">전체 평균 점수</div>
@@ -589,16 +667,12 @@
                         <div style="font-size:0.8rem; color:#666;">/15점</div>
                         <div id="reportAnsweredCount" style="font-size:0.82rem; color:#888; margin-top:6px;"></div>
                     </div>
-
-                    <!-- 카테고리 차트 -->
                     <div style="margin-bottom:20px;">
                         <div style="font-size:0.85rem; color:#aaa; margin-bottom:10px;">📊 카테고리별 평균 점수</div>
                         <div id="reportNoStats" class="hidden"
                             style="font-size:0.82rem; color:#555; text-align:center; padding:12px 0;">답변 데이터가 없습니다</div>
                         <canvas id="reportCategoryChart" height="100"></canvas>
                     </div>
-
-                    <!-- 잘한 / 못한 질문 -->
                     <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:20px;">
                         <div id="reportBest"
                             style="background:#0f1117; border:1px solid #1a3a1a; border-radius:8px; padding:12px;">
@@ -620,90 +694,223 @@
                         </div>
                     </div>
                 </div>
-
                 <div class="nav-btns" style="margin-top:16px;">
                     <button class="btn-ghost" onclick="goHistory()">📂 연습 기록 보기</button>
                     <button class="btn-primary" onclick="location.reload()">다시 시작</button>
                 </div>
             </div>
-        </div>
 
-        <!-- ───────────── 히스토리: 세션 목록 ───────────── -->
-        <div id="historyListView" class="hidden">
-            <div class="card">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
-                    <h2 style="margin:0;">📂 연습 기록</h2>
-                    <button class="btn-ghost" onclick="goInterview()">← 면접으로</button>
-                </div>
-                <div id="sessionList"></div>
-            </div>
-        </div>
-
-        <!-- ───────────── 히스토리: 세션 상세 ───────────── -->
-        <div id="historyDetailView" class="hidden">
-            <div class="card">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-                    <div>
-                        <h2 style="margin:0; font-size:1.1rem; color:#e0e0e0;" id="detailTitle"></h2>
-                        <p style="font-size:0.8rem; color:#666; margin-top:4px;" id="detailDate"></p>
+            <!-- ───────────── 히스토리: 세션 목록 ───────────── -->
+            <div id="historyListView" class="hidden">
+                <div class="card">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+                        <h2 style="margin:0;">📂 연습 기록</h2>
+                        <button class="btn-ghost" onclick="goInterview()">← 면접으로</button>
                     </div>
-                    <button class="btn-ghost" onclick="goHistoryList()">← 목록으로</button>
+                    <div id="sessionList"></div>
                 </div>
-                <div id="questionHistoryList"></div>
+            </div>
+
+            <!-- ───────────── 히스토리: 세션 상세 ───────────── -->
+            <div id="historyDetailView" class="hidden">
+                <div class="card">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                        <div>
+                            <h2 style="margin:0; font-size:1.1rem; color:#e0e0e0;" id="detailTitle"></h2>
+                            <p style="font-size:0.8rem; color:#666; margin-top:4px;" id="detailDate"></p>
+                        </div>
+                        <button class="btn-ghost" onclick="goHistoryList()">← 목록으로</button>
+                    </div>
+                    <div id="questionHistoryList"></div>
+                </div>
             </div>
         </div>
-    </div>
 
-    <script>
-        const API = 'http://localhost:8000/api/v1';
-        let questions = [];
-        let currentIdx = 0;
-        let mediaRecorder = null;
-        let audioChunks = [];
-        let isRecording = false;
-        let timerInterval = null;
-        let seconds = 0;
-        let currentAudioBlob = null;
-        let mimeType = '';
-        let audioContext = null;
-        let analyser = null;
-        let animationId = null;
-        let recordedDuration = 0;
-        let chartInstances = {};
-        let currentSessionId = null;
+        <script>
+            const API = 'http://localhost:8000/api/v1';
+            let questions = [];
+            let currentIdx = 0;
+            let mediaRecorder = null;
+            let audioChunks = [];
+            let isRecording = false;
+            let timerInterval = null;
+            let seconds = 0;
+            let currentAudioBlob = null;
+            let mimeType = '';
+            let audioContext = null;
+            let analyser = null;
+            let animationId = null;
+            let recordedDuration = 0;
+            let chartInstances = {};
+            let currentSessionId = null;
+            let currentCoverLetter = null;
+            let currentCoverSessionId = null;
 
-        // ───────── 화면 전환 ─────────
-        function goHistory() {
-            document.getElementById('interviewView').classList.add('hidden');
-            document.getElementById('historyDetailView').classList.add('hidden');
-            document.getElementById('historyListView').classList.remove('hidden');
-            loadSessionList();
-        }
 
-        function goHistoryList() {
-            document.getElementById('historyDetailView').classList.add('hidden');
-            document.getElementById('historyListView').classList.remove('hidden');
-            loadSessionList();
-        }
+            function selectMode(mode) {
+                document.getElementById('startCard').classList.add('hidden');
+                document.getElementById('coverCard').classList.add('hidden');
+                document.getElementById('setupCard').classList.add('hidden');
+                document.getElementById('coverResultCard').classList.add('hidden');
 
-        function goInterview() {
-            document.getElementById('historyListView').classList.add('hidden');
-            document.getElementById('historyDetailView').classList.add('hidden');
-            document.getElementById('interviewView').classList.remove('hidden');
-        }
-
-        // ───────── 세션 목록 ─────────
-        async function loadSessionList() {
-            const container = document.getElementById('sessionList');
-            container.innerHTML = '<p class="empty-msg">불러오는 중...</p>';
-            try {
-                const res = await fetch(`${API}/sessions`);
-                const sessions = await res.json();
-                if (!sessions.length) {
-                    container.innerHTML = '<p class="empty-msg">연습 기록이 없습니다</p>';
-                    return;
+                if (mode === 'cover') {
+                    document.getElementById('coverCard').classList.remove('hidden');
+                } else if (mode === 'interview') {
+                    document.getElementById('setupCard').classList.remove('hidden');
+                } else {
+                    document.getElementById('startCard').classList.remove('hidden');
                 }
-                container.innerHTML = sessions.map(s => `
+            }
+
+            async function startCoverLetter() {
+                const jobUrl = document.getElementById('coverJobUrl').value.trim();
+                const resumeText = document.getElementById('coverResumeText').value.trim();
+                if (!jobUrl || !resumeText) { alert('URL과 이력서를 모두 입력해주세요'); return; }
+
+                document.getElementById('coverStatus').textContent = '자소서 생성 중... (30초 정도 걸려요)';
+
+                try {
+                    // 세션 먼저 생성
+                    const sessionRes = await fetch(`${API}/sessions`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ job_url: jobUrl, resume_text: resumeText })
+                    });
+                    const sessionData = await sessionRes.json();
+                    currentCoverSessionId = sessionData.id;
+
+                    // 자소서 생성
+                    const length = parseInt(document.getElementById('coverLength').value);
+                    const customFormat = document.getElementById('coverCustomFormat').value.trim();
+                    const coverRes = await fetch(`${API}/cover-letter/generate`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            session_id: currentCoverSessionId,
+                            length: length,
+                            custom_format: customFormat
+                        })
+                    });
+                    const coverData = await coverRes.json();
+                    currentCoverLetter = coverData.cover_letter;
+
+                    // 자소서 화면 표시
+                    const container = document.getElementById('coverResultContent');
+                    container.innerHTML = Object.entries(coverData.cover_letter).map(([key, value]) => `
+            <div style="margin-bottom:16px;">
+                <div style="font-size:0.85rem; color:#888; margin-bottom:6px;">${key}</div>
+                <textarea style="width:100%; background:#0f1117; border:1px solid #2a2d3a; border-radius:8px; padding:12px; color:#e0e0e0; font-size:0.85rem; line-height:1.6; resize:vertical; min-height:80px;"
+                    onchange="updateCoverLetter('${key}', this.value)">${value}</textarea>
+            </div>
+        `).join('');
+
+                    document.getElementById('coverCard').classList.add('hidden');
+                    document.getElementById('coverResultCard').classList.remove('hidden');
+                    document.getElementById('coverStatus').textContent = '';
+
+                } catch (e) {
+                    document.getElementById('coverStatus').textContent = '오류: ' + e.message;
+                }
+            }
+
+            function updateCoverLetter(key, value) {
+                if (currentCoverLetter) currentCoverLetter[key] = value;
+            }
+
+            function backToCoverEdit() {
+                document.getElementById('coverResultCard').classList.add('hidden');
+                document.getElementById('coverCard').classList.remove('hidden');
+            }
+
+            async function evaluateCoverLetter() {
+                if (!currentCoverLetter || !currentCoverSessionId) return;
+                try {
+                    const res = await fetch(`${API}/cover-letter/evaluate`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            session_id: currentCoverSessionId,
+                            cover_letter: currentCoverLetter
+                        })
+                    });
+                    const data = await res.json();
+                    document.getElementById('evalSpecificity').textContent = data.specificity;
+                    document.getElementById('evalRelevance').textContent = data.relevance;
+                    document.getElementById('evalStructure').textContent = data.structure;
+                    document.getElementById('evalTotal').textContent = data.total;
+                    document.getElementById('evalFeedback').textContent = `💬 ${data.feedback}`;
+                    document.getElementById('coverEvalResult').classList.remove('hidden');
+                } catch (e) {
+                    alert('평가 실패: ' + e.message);
+                }
+            }
+
+            function goToInterviewFromCover() {
+                if (!currentCoverSessionId) return;
+                fetch(`${API}/sessions/${currentCoverSessionId}`)
+                    .then(r => r.json())
+                    .then(data => {
+                        questions = data.questions;
+                        currentSessionId = currentCoverSessionId;
+                        currentIdx = 0;
+
+                        document.getElementById('coverResultCard').classList.add('hidden');
+                        document.getElementById('interviewView').classList.remove('hidden');
+                        document.getElementById('startCard').classList.add('hidden');
+                        document.getElementById('setupCard').classList.add('hidden');
+                        document.getElementById('feedbackCard').classList.add('hidden');
+                        document.getElementById('doneCard').classList.add('hidden');
+                        document.getElementById('questionCard').classList.remove('hidden');
+
+                        const q = questions[0];
+                        document.getElementById('questionProgress').textContent = `(1/${questions.length})`;
+                        document.getElementById('questionText').textContent = q.question_text;
+                        const badge = document.getElementById('categoryBadge');
+                        badge.textContent = q.category;
+                        badge.style.cssText = categoryStyle(q.category);
+                        document.getElementById('inputMethodSelect').classList.remove('hidden');
+                        document.getElementById('micSection').classList.add('hidden');
+                        document.getElementById('fileSection').classList.add('hidden');
+                        document.getElementById('transcriptSection').classList.add('hidden');
+                        document.getElementById('recordStatus').textContent = '버튼을 눌러 답변 녹음을 시작하세요';
+                        document.getElementById('submitStatus').textContent = '';
+                        document.getElementById('timer').classList.add('hidden');
+                        document.getElementById('visualizer').classList.add('hidden');
+                    })
+                    .catch(e => alert('면접 시작 실패: ' + e.message));
+            }
+            // ───────── 화면 전환 ─────────
+            function goHistory() {
+                document.getElementById('interviewView').classList.add('hidden');
+                document.getElementById('historyDetailView').classList.add('hidden');
+                document.getElementById('historyListView').classList.remove('hidden');
+                loadSessionList();
+            }
+
+            function goHistoryList() {
+                document.getElementById('historyDetailView').classList.add('hidden');
+                document.getElementById('historyListView').classList.remove('hidden');
+                loadSessionList();
+            }
+
+            function goInterview() {
+                document.getElementById('historyListView').classList.add('hidden');
+                document.getElementById('historyDetailView').classList.add('hidden');
+                document.getElementById('interviewView').classList.remove('hidden');
+            }
+
+            // ───────── 세션 목록 ─────────
+            async function loadSessionList() {
+                const container = document.getElementById('sessionList');
+                container.innerHTML = '<p class="empty-msg">불러오는 중...</p>';
+                try {
+                    const res = await fetch(`${API}/sessions`);
+                    const sessions = await res.json();
+                    if (!sessions.length) {
+                        container.innerHTML = '<p class="empty-msg">연습 기록이 없습니다</p>';
+                        return;
+                    }
+                    container.innerHTML = sessions.map(s => `
                     <div class="session-item" onclick="loadSessionDetail(${s.id})">
                         <div class="session-info">
                             <div class="company">${s.company || '회사 미확인'} ${s.position ? '· ' + s.position : ''}</div>
@@ -716,63 +923,63 @@
                         </div>
                     </div>
                 `).join('');
-            } catch (e) {
-                container.innerHTML = '<p class="empty-msg">불러오기 실패: ' + e.message + '</p>';
+                } catch (e) {
+                    container.innerHTML = '<p class="empty-msg">불러오기 실패: ' + e.message + '</p>';
+                }
             }
-        }
 
-        // ───────── 세션 상세 ─────────
-        async function loadSessionDetail(sessionId) {
-            document.getElementById('historyListView').classList.add('hidden');
-            document.getElementById('historyDetailView').classList.remove('hidden');
-            document.getElementById('questionHistoryList').innerHTML = '<p class="empty-msg">불러오는 중...</p>';
+            // ───────── 세션 상세 ─────────
+            async function loadSessionDetail(sessionId) {
+                document.getElementById('historyListView').classList.add('hidden');
+                document.getElementById('historyDetailView').classList.remove('hidden');
+                document.getElementById('questionHistoryList').innerHTML = '<p class="empty-msg">불러오는 중...</p>';
 
-            Object.values(chartInstances).forEach(c => c.destroy());
-            chartInstances = {};
+                Object.values(chartInstances).forEach(c => c.destroy());
+                chartInstances = {};
 
-            try {
-                const [historyRes, statsRes] = await Promise.all([
-                    fetch(`${API}/sessions/${sessionId}/history`),
-                    fetch(`${API}/sessions/${sessionId}/category-stats`)
-                ]);
-                const data = await historyRes.json();
-                const statsData = await statsRes.json();
+                try {
+                    const [historyRes, statsRes] = await Promise.all([
+                        fetch(`${API}/sessions/${sessionId}/history`),
+                        fetch(`${API}/sessions/${sessionId}/category-stats`)
+                    ]);
+                    const data = await historyRes.json();
+                    const statsData = await statsRes.json();
 
-                document.getElementById('detailTitle').textContent =
-                    `${data.company || '회사 미확인'}${data.position ? ' · ' + data.position : ''}`;
-                document.getElementById('detailDate').textContent = formatDate(data.created_at);
+                    document.getElementById('detailTitle').textContent =
+                        `${data.company || '회사 미확인'}${data.position ? ' · ' + data.position : ''}`;
+                    document.getElementById('detailDate').textContent = formatDate(data.created_at);
 
-                const container = document.getElementById('questionHistoryList');
+                    const container = document.getElementById('questionHistoryList');
 
-                // 카테고리 차트 섹션
-                const hasStats = statsData.categories.some(c => c.avg_score !== null);
-                const chartSection = `
+                    // 카테고리 차트 섹션
+                    const hasStats = statsData.categories.some(c => c.avg_score !== null);
+                    const chartSection = `
             <div style="background:#0f1117; border:1px solid #2a2d3a; border-radius:10px; padding:16px; margin-bottom:20px;">
                 <div style="font-size:0.85rem; color:#aaa; margin-bottom:12px;">📊 카테고리별 평균 점수</div>
                 ${!hasStats
-                        ? '<p style="font-size:0.82rem; color:#555; text-align:center; padding:16px 0;">아직 답변 데이터가 없습니다</p>'
-                        : '<canvas id="categoryChart" height="120"></canvas>'
-                    }
+                            ? '<p style="font-size:0.82rem; color:#555; text-align:center; padding:16px 0;">아직 답변 데이터가 없습니다</p>'
+                            : '<canvas id="categoryChart" height="120"></canvas>'
+                        }
             </div>`;
 
-                if (!data.questions.length) {
-                    container.innerHTML = chartSection + '<p class="empty-msg">질문이 없습니다</p>';
-                } else {
-                    container.innerHTML = chartSection + data.questions.map((q, qi) => {
-                        const hasAnswers = q.answers && q.answers.length > 0;
-                        const attemptsHtml = hasAnswers ? q.answers.map((a, ai) => {
-                            const ev = a.evaluation;
-                            const scores = ev
-                                ? `<div class="attempt-scores">
+                    if (!data.questions.length) {
+                        container.innerHTML = chartSection + '<p class="empty-msg">질문이 없습니다</p>';
+                    } else {
+                        container.innerHTML = chartSection + data.questions.map((q, qi) => {
+                            const hasAnswers = q.answers && q.answers.length > 0;
+                            const attemptsHtml = hasAnswers ? q.answers.map((a, ai) => {
+                                const ev = a.evaluation;
+                                const scores = ev
+                                    ? `<div class="attempt-scores">
                             <div class="attempt-score">논리 <span>${ev.logic_score}</span></div>
                             <div class="attempt-score">구체성 <span>${ev.specificity_score}</span></div>
                             <div class="attempt-score">시간 <span>${ev.time_score}</span></div>
                             <div class="attempt-score">총점 <span>${ev.total_score}/15</span></div>
                            </div>`
-                                : '<div class="attempt-score" style="color:#555;">평가 없음</div>';
-                            const feedback = ev && ev.feedback
-                                ? `<div class="attempt-feedback">💬 ${ev.feedback}</div>` : '';
-                            return `
+                                    : '<div class="attempt-score" style="color:#555;">평가 없음</div>';
+                                const feedback = ev && ev.feedback
+                                    ? `<div class="attempt-feedback">💬 ${ev.feedback}</div>` : '';
+                                return `
                         <div class="attempt-row">
                             <div class="attempt-header">
                                 <span class="attempt-num">${ai + 1}번째 시도 · ${formatDate(a.created_at)}</span>
@@ -780,13 +987,13 @@
                             ${scores}
                             ${feedback}
                         </div>`;
-                        }).join('') : '<p style="font-size:0.82rem; color:#555; padding:8px 0;">아직 답변이 없습니다</p>';
+                            }).join('') : '<p style="font-size:0.82rem; color:#555; padding:8px 0;">아직 답변이 없습니다</p>';
 
-                        const chartHtml = hasAnswers && q.answers.filter(a => a.evaluation).length > 1
-                            ? `<div class="chart-wrap"><div class="chart-title">총점 추이</div><canvas id="chart_${q.id}" height="80"></canvas></div>`
-                            : '';
+                            const chartHtml = hasAnswers && q.answers.filter(a => a.evaluation).length > 1
+                                ? `<div class="chart-wrap"><div class="chart-title">총점 추이</div><canvas id="chart_${q.id}" height="80"></canvas></div>`
+                                : '';
 
-                        return `
+                            return `
                     <div class="question-history-item">
                         <div style="display:flex; gap:8px; align-items:center; margin-bottom:8px;">
                             <span class="category-badge" style="${categoryStyle(q.category)}">${q.category}</span>
@@ -795,27 +1002,400 @@
                         ${attemptsHtml}
                         ${chartHtml}
                     </div>`;
-                    }).join('');
+                        }).join('');
+                    }
+
+                    // 카테고리 차트 그리기
+                    if (hasStats) {
+                        const categoryColors = {
+                            '보유 스킬': 'rgba(46, 204, 113, 0.8)',
+                            '부족 스킬': 'rgba(231, 76, 60, 0.8)',
+                            '직무/회사': 'rgba(79, 110, 247, 0.8)',
+                            '인성/경험': 'rgba(243, 156, 18, 0.8)',
+                        };
+                        const ctx = document.getElementById('categoryChart');
+                        if (ctx) {
+                            chartInstances['category'] = new Chart(ctx, {
+                                type: 'bar',
+                                data: {
+                                    labels: statsData.categories.map(c => c.category),
+                                    datasets: [{
+                                        label: '평균 총점',
+                                        data: statsData.categories.map(c => c.avg_score ?? 0),
+                                        backgroundColor: statsData.categories.map(c => categoryColors[c.category] || 'rgba(79,110,247,0.8)'),
+                                        borderRadius: 6,
+                                    }]
+                                },
+                                options: {
+                                    indexAxis: 'y',
+                                    responsive: true,
+                                    scales: {
+                                        x: {
+                                            min: 0, max: 15,
+                                            ticks: { color: '#666', stepSize: 5 },
+                                            grid: { color: '#1a1d27' }
+                                        },
+                                        y: { ticks: { color: '#aaa' }, grid: { display: false } }
+                                    },
+                                    plugins: {
+                                        legend: { display: false },
+                                        tooltip: {
+                                            callbacks: {
+                                                label: (ctx) => ctx.raw > 0 ? `평균 총점: ${ctx.raw}` : '답변 없음'
+                                            }
+                                        }
+                                    }
+                                }
+                            });
+                        }
+                    }
+
+                    // 질문별 점수 추이 차트
+                    data.questions.forEach(q => {
+                        const evaluated = q.answers.filter(a => a.evaluation);
+                        if (evaluated.length > 1) {
+                            const ctx = document.getElementById(`chart_${q.id}`);
+                            if (ctx) {
+                                chartInstances[q.id] = new Chart(ctx, {
+                                    type: 'line',
+                                    data: {
+                                        labels: evaluated.map((_, i) => `${i + 1}회`),
+                                        datasets: [{
+                                            label: '총점',
+                                            data: evaluated.map(a => a.evaluation.total_score),
+                                            borderColor: '#4f6ef7',
+                                            backgroundColor: 'rgba(79,110,247,0.1)',
+                                            tension: 0.3,
+                                            pointRadius: 4,
+                                            pointBackgroundColor: '#4f6ef7',
+                                        }]
+                                    },
+                                    options: {
+                                        responsive: true,
+                                        scales: {
+                                            y: { min: 0, max: 15, ticks: { color: '#666', stepSize: 5 }, grid: { color: '#1a1d27' } },
+                                            x: { ticks: { color: '#666' }, grid: { display: false } }
+                                        },
+                                        plugins: {
+                                            legend: { display: false },
+                                            tooltip: {
+                                                callbacks: {
+                                                    label: (ctx) => ctx.raw !== null ? `평균 총점: ${ctx.raw}` : '답변 없음'
+                                                }
+                                            }
+                                        }
+                                    }
+                                });
+                            }
+                        }
+                    });
+
+                } catch (e) {
+                    document.getElementById('questionHistoryList').innerHTML = '<p class="empty-msg">불러오기 실패: ' + e.message + '</p>';
+                }
+            }
+
+            // ───────── 유틸 ─────────
+            function formatDate(isoStr) {
+                if (!isoStr) return '';
+                const d = new Date(isoStr);
+                return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+            }
+
+            function categoryStyle(cat) {
+                if (cat === '보유 스킬') return 'background:#1a3a1a; color:#2ecc71;';
+                if (cat === '부족 스킬') return 'background:#3a1a1a; color:#e74c3c;';
+                if (cat.includes('직무')) return 'background:#1a1a3a; color:#4f6ef7;';
+                return 'background:#3a3a1a; color:#f39c12;';
+            }
+
+            // ───────── 기존 면접 로직 ─────────
+            async function loadMicrophones() {
+                const select = document.getElementById('micSelect');
+                if (!select) return;
+                try {
+                    await navigator.mediaDevices.getUserMedia({ audio: true });
+                    const devices = await navigator.mediaDevices.enumerateDevices();
+                    const mics = devices.filter(d => d.kind === 'audioinput');
+                    select.innerHTML = '';
+                    mics.forEach(mic => {
+                        const option = document.createElement('option');
+                        option.value = mic.deviceId;
+                        option.textContent = mic.label || `마이크 ${mic.deviceId.slice(0, 8)}`;
+                        select.appendChild(option);
+                    });
+                } catch (e) { console.error(e); }
+            }
+            window.addEventListener('load', loadMicrophones);
+
+            async function startSession() {
+                const jobUrl = document.getElementById('jobUrl').value.trim();
+                const resumeText = document.getElementById('resumeText').value.trim();
+                if (!jobUrl || !resumeText) { alert('URL과 이력서를 모두 입력해주세요'); return; }
+                document.getElementById('setupStatus').textContent = '분석 중... (30초 정도 걸려요)';
+                try {
+                    const res = await fetch(`${API}/sessions`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ job_url: jobUrl, resume_text: resumeText })
+                    });
+                    const data = await res.json();
+                    questions = data.questions;
+                    currentSessionId = data.id; // 세션 생성 후 ID 저장. 
+                    document.getElementById('setupCard').classList.add('hidden');
+                    showQuestion();
+                } catch (e) {
+                    document.getElementById('setupStatus').textContent = '오류 발생: ' + e.message;
+                }
+            }
+
+            function showQuestion() {
+                if (currentIdx >= questions.length) {
+                    document.getElementById('questionCard').classList.add('hidden');
+                    document.getElementById('doneCard').classList.remove('hidden');
+                    loadSessionReport(currentSessionId);
+                    return;
+                }
+                const q = questions[currentIdx];
+                document.getElementById('questionProgress').textContent = `(${currentIdx + 1}/${questions.length})`;
+                document.getElementById('questionText').textContent = q.question_text;
+                const badge = document.getElementById('categoryBadge');
+                badge.textContent = q.category;
+                badge.style.cssText = categoryStyle(q.category);
+                document.getElementById('inputMethodSelect').classList.remove('hidden');
+                document.getElementById('micSection').classList.add('hidden');
+                document.getElementById('fileSection').classList.add('hidden');
+                document.getElementById('transcriptSection').classList.add('hidden');
+                document.getElementById('feedbackCard').classList.add('hidden');
+                document.getElementById('recordStatus').textContent = '버튼을 눌러 답변 녹음을 시작하세요';
+                document.getElementById('submitStatus').textContent = '';
+                document.getElementById('timer').classList.add('hidden');
+                document.getElementById('visualizer').classList.add('hidden');
+                currentAudioBlob = null;
+                seconds = 0;
+                document.getElementById('questionCard').classList.remove('hidden');
+            }
+
+            function selectInputMethod(method) {
+                document.getElementById('inputMethodSelect').classList.add('hidden');
+                if (method === 'mic') document.getElementById('micSection').classList.remove('hidden');
+                else document.getElementById('fileSection').classList.remove('hidden');
+            }
+
+            function backToMethodSelect() {
+                document.getElementById('micSection').classList.add('hidden');
+                document.getElementById('fileSection').classList.add('hidden');
+                document.getElementById('transcriptSection').classList.add('hidden');
+                document.getElementById('inputMethodSelect').classList.remove('hidden');
+                if (isRecording) {
+                    mediaRecorder.stop();
+                    mediaRecorder.stream.getTracks().forEach(t => t.stop());
+                    isRecording = false;
+                    clearInterval(timerInterval);
+                    cancelAnimationFrame(animationId);
+                    if (audioContext) { audioContext.close(); audioContext = null; }
+                    document.getElementById('recordBtn').classList.remove('recording');
+                    document.getElementById('recordBtn').textContent = '🎙️';
+                }
+            }
+
+            function drawVisualizer() {
+                const canvas = document.getElementById('visualizer');
+                canvas.width = canvas.offsetWidth || 600;
+                canvas.height = 60;
+                const ctx = canvas.getContext('2d');
+                const bufferLength = analyser.frequencyBinCount;
+                const dataArray = new Uint8Array(bufferLength);
+                function draw() {
+                    animationId = requestAnimationFrame(draw);
+                    analyser.getByteFrequencyData(dataArray);
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    const barWidth = (canvas.width / bufferLength) * 1.2;
+                    let x = 0;
+                    for (let i = 0; i < bufferLength; i++) {
+                        const barHeight = (dataArray[i] / 255) * canvas.height;
+                        const intensity = dataArray[i] / 255;
+                        ctx.fillStyle = `rgba(${Math.floor(79 + intensity * 100)}, ${Math.floor(110 + intensity * 50)}, 247, 0.85)`;
+                        ctx.beginPath();
+                        ctx.roundRect(x, canvas.height - barHeight, Math.max(barWidth - 1, 1), barHeight, 2);
+                        ctx.fill();
+                        x += barWidth + 1;
+                    }
+                }
+                draw();
+            }
+
+            async function toggleRecord() {
+                if (!isRecording) {
+                    const deviceId = document.getElementById('micSelect').value;
+                    const stream = await navigator.mediaDevices.getUserMedia({
+                        audio: deviceId ? { deviceId: { exact: deviceId } } : true
+                    });
+                    mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' :
+                        MediaRecorder.isTypeSupported('audio/ogg;codecs=opus') ? 'audio/ogg;codecs=opus' : 'audio/webm';
+                    mediaRecorder = new MediaRecorder(stream, { mimeType, audioBitsPerSecond: 128000 });
+                    audioChunks = [];
+                    mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+                    mediaRecorder.onstop = async () => {
+                        currentAudioBlob = new Blob(audioChunks, { type: mimeType });
+                        recordedDuration = seconds;
+                        await processRecording();
+                    };
+                    mediaRecorder.start();
+                    isRecording = true;
+                    seconds = 0;
+                    audioContext = new AudioContext();
+                    analyser = audioContext.createAnalyser();
+                    analyser.fftSize = 128;
+                    const source = audioContext.createMediaStreamSource(stream);
+                    source.connect(analyser);
+                    document.getElementById('visualizer').classList.remove('hidden');
+                    drawVisualizer();
+                    document.getElementById('recordBtn').classList.add('recording');
+                    document.getElementById('recordBtn').textContent = '⏹️';
+                    document.getElementById('recordStatus').textContent = '녹음 중...';
+                    document.getElementById('timer').classList.remove('hidden');
+                    timerInterval = setInterval(() => {
+                        seconds++;
+                        const m = String(Math.floor(seconds / 60)).padStart(2, '0');
+                        const s = String(seconds % 60).padStart(2, '0');
+                        document.getElementById('timer').textContent = `${m}:${s}`;
+                    }, 1000);
+                } else {
+                    mediaRecorder.stop();
+                    mediaRecorder.stream.getTracks().forEach(t => t.stop());
+                    isRecording = false;
+                    clearInterval(timerInterval);
+                    cancelAnimationFrame(animationId);
+                    if (audioContext) { audioContext.close(); audioContext = null; }
+                    document.getElementById('recordBtn').classList.remove('recording');
+                    document.getElementById('recordBtn').textContent = '🎙️';
+                    document.getElementById('recordStatus').textContent = '변환 중...';
+                    document.getElementById('timer').classList.add('hidden');
+                    document.getElementById('visualizer').classList.add('hidden');
+                }
+            }
+
+            async function processRecording() {
+                const formData = new FormData();
+                formData.append('audio', currentAudioBlob, 'answer.webm');
+                try {
+                    const q = questions[currentIdx];
+                    const res = await fetch(`${API}/questions/${q.id}/answers`, { method: 'POST', body: formData });
+                    const data = await res.json();
+                    const m = String(Math.floor(recordedDuration / 60)).padStart(2, '0');
+                    const s = String(recordedDuration % 60).padStart(2, '0');
+                    document.getElementById('durationBadge').textContent = `🕐 녹음 시간: ${m}:${s}`;
+                    document.getElementById('transcriptText').value = data.answer_text;
+                    document.getElementById('transcriptSection').classList.remove('hidden');
+                    document.getElementById('recordStatus').textContent = '텍스트를 확인하고 수정 후 평가받으세요';
+                    document.getElementById('transcriptSection').dataset.answerId = data.answer_id;
+                } catch (e) {
+                    document.getElementById('recordStatus').textContent = '오류: ' + e.message;
+                }
+            }
+
+            async function submitTranscript() {
+                const editedText = document.getElementById('transcriptText').value.trim();
+                if (!editedText) { alert('텍스트를 입력해주세요'); return; }
+                document.getElementById('submitStatus').textContent = '평가 중...';
+                try {
+                    const q = questions[currentIdx];
+                    const res = await fetch(`${API}/evaluate-text`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ question_id: q.id, answer_text: editedText, duration_seconds: recordedDuration })
+                    });
+                    const feedback = await res.json();
+                    showFeedback(feedback);
+                } catch (e) {
+                    document.getElementById('submitStatus').textContent = '오류: ' + e.message;
+                }
+            }
+
+            async function submitFileAnswer() {
+                const fileInput = document.getElementById('audioFile');
+                if (!fileInput.files[0]) { alert('파일을 선택해주세요'); return; }
+                document.getElementById('submitStatus').textContent = '분석 중...';
+                const formData = new FormData();
+                formData.append('audio', fileInput.files[0]);
+                try {
+                    const q = questions[currentIdx];
+                    const res = await fetch(`${API}/questions/${q.id}/answers`, { method: 'POST', body: formData });
+                    const data = await res.json();
+                    const feedbackRes = await fetch(`${API}/answers/${data.answer_id}/feedback`);
+                    const feedback = await feedbackRes.json();
+                    showFeedback(feedback);
+                } catch (e) {
+                    document.getElementById('submitStatus').textContent = '오류: ' + e.message;
+                }
+            }
+
+            function showFeedback(feedback) {
+                document.getElementById('answerText').textContent = `"${feedback.answer_text}"`;
+                document.getElementById('logicScore').textContent = feedback.logic_score;
+                document.getElementById('specificityScore').textContent = feedback.specificity_score;
+                document.getElementById('timeScore').textContent = feedback.time_score;
+                document.getElementById('totalScore').textContent = feedback.total_score;
+                document.getElementById('feedbackText').textContent = `💬 ${feedback.feedback}`;
+
+                // 모범 답안 표시
+                const q = questions[currentIdx];
+                if (q && q.model_answer) {
+                    document.getElementById('modelAnswerText').textContent = q.model_answer;
+                    document.getElementById('modelAnswerSection').classList.remove('hidden');
+                }
+                if (q && q.tip) {
+                    document.getElementById('tipText').textContent = q.tip;
+                    document.getElementById('tipSection').classList.remove('hidden');
                 }
 
-                // 카테고리 차트 그리기
-                if (hasStats) {
-                    const categoryColors = {
-                        '보유 스킬': 'rgba(46, 204, 113, 0.8)',
-                        '부족 스킬': 'rgba(231, 76, 60, 0.8)',
-                        '직무/회사': 'rgba(79, 110, 247, 0.8)',
-                        '인성/경험': 'rgba(243, 156, 18, 0.8)',
-                    };
-                    const ctx = document.getElementById('categoryChart');
-                    if (ctx) {
-                        chartInstances['category'] = new Chart(ctx, {
+                document.getElementById('feedbackCard').classList.remove('hidden');
+                document.getElementById('submitStatus').textContent = '';
+            }
+
+            function nextQuestion() {
+                currentIdx++;
+                document.getElementById('feedbackCard').classList.add('hidden');
+                document.getElementById('modelAnswerSection').classList.add('hidden');
+                document.getElementById('tipSection').classList.add('hidden');
+                showQuestion();
+            }
+            async function loadSessionReport(sessionId) {
+                document.getElementById('reportLoading').classList.remove('hidden');
+                document.getElementById('reportContent').classList.add('hidden');
+
+                try {
+                    const res = await fetch(`${API}/sessions/${sessionId}/report`);
+                    const report = await res.json();
+
+                    document.getElementById('reportOverallAvg').textContent =
+                        report.overall_avg !== null ? report.overall_avg : '-';
+                    document.getElementById('reportAnsweredCount').textContent =
+                        `${report.answered_questions}개 질문 답변 완료 / 전체 ${report.total_questions}개`;
+
+                    const hasStats = report.category_stats.some(c => c.avg_score !== null);
+                    if (!hasStats) {
+                        document.getElementById('reportNoStats').classList.remove('hidden');
+                        document.getElementById('reportCategoryChart').classList.add('hidden');
+                    } else {
+                        const categoryColors = {
+                            '보유 스킬': 'rgba(46, 204, 113, 0.8)',
+                            '부족 스킬': 'rgba(231, 76, 60, 0.8)',
+                            '직무/회사': 'rgba(79, 110, 247, 0.8)',
+                            '인성/경험': 'rgba(243, 156, 18, 0.8)',
+                        };
+                        if (chartInstances['reportCategory']) {
+                            chartInstances['reportCategory'].destroy();
+                        }
+                        const ctx = document.getElementById('reportCategoryChart');
+                        chartInstances['reportCategory'] = new Chart(ctx, {
                             type: 'bar',
                             data: {
-                                labels: statsData.categories.map(c => c.category),
+                                labels: report.category_stats.map(c => c.category),
                                 datasets: [{
-                                    label: '평균 총점',
-                                    data: statsData.categories.map(c => c.avg_score ?? 0),
-                                    backgroundColor: statsData.categories.map(c => categoryColors[c.category] || 'rgba(79,110,247,0.8)'),
+                                    data: report.category_stats.map(c => c.avg_score ?? 0),
+                                    backgroundColor: report.category_stats.map(c => categoryColors[c.category] || 'rgba(79,110,247,0.8)'),
                                     borderRadius: 6,
                                 }]
                             },
@@ -823,11 +1403,7 @@
                                 indexAxis: 'y',
                                 responsive: true,
                                 scales: {
-                                    x: {
-                                        min: 0, max: 15,
-                                        ticks: { color: '#666', stepSize: 5 },
-                                        grid: { color: '#1a1d27' }
-                                    },
+                                    x: { min: 0, max: 15, ticks: { color: '#666' }, grid: { color: '#1a1d27' } },
                                     y: { ticks: { color: '#aaa' }, grid: { display: false } }
                                 },
                                 plugins: {
@@ -841,399 +1417,31 @@
                             }
                         });
                     }
-                }
 
-                // 질문별 점수 추이 차트
-                data.questions.forEach(q => {
-                    const evaluated = q.answers.filter(a => a.evaluation);
-                    if (evaluated.length > 1) {
-                        const ctx = document.getElementById(`chart_${q.id}`);
-                        if (ctx) {
-                            chartInstances[q.id] = new Chart(ctx, {
-                                type: 'line',
-                                data: {
-                                    labels: evaluated.map((_, i) => `${i + 1}회`),
-                                    datasets: [{
-                                        label: '총점',
-                                        data: evaluated.map(a => a.evaluation.total_score),
-                                        borderColor: '#4f6ef7',
-                                        backgroundColor: 'rgba(79,110,247,0.1)',
-                                        tension: 0.3,
-                                        pointRadius: 4,
-                                        pointBackgroundColor: '#4f6ef7',
-                                    }]
-                                },
-                                options: {
-                                    responsive: true,
-                                    scales: {
-                                        y: { min: 0, max: 15, ticks: { color: '#666', stepSize: 5 }, grid: { color: '#1a1d27' } },
-                                        x: { ticks: { color: '#666' }, grid: { display: false } }
-                                    },
-                                    plugins: {
-                                        legend: { display: false },
-                                        tooltip: {
-                                            callbacks: {
-                                                label: (ctx) => ctx.raw !== null ? `평균 총점: ${ctx.raw}` : '답변 없음'
-                                            }
-                                        }
-                                    }
-                                }
-                            });
-                        }
+                    if (report.best_answer) {
+                        document.getElementById('reportBestQuestion').textContent = report.best_answer.question;
+                        document.getElementById('reportBestScore').textContent = `총점 ${report.best_answer.score}/15`;
+                        document.getElementById('reportBestFeedback').textContent = report.best_answer.feedback || '';
+                    } else {
+                        document.getElementById('reportBest').classList.add('hidden');
                     }
-                });
 
-            } catch (e) {
-                document.getElementById('questionHistoryList').innerHTML = '<p class="empty-msg">불러오기 실패: ' + e.message + '</p>';
-            }
-        }
-
-        // ───────── 유틸 ─────────
-        function formatDate(isoStr) {
-            if (!isoStr) return '';
-            const d = new Date(isoStr);
-            return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
-        }
-
-        function categoryStyle(cat) {
-            if (cat === '보유 스킬') return 'background:#1a3a1a; color:#2ecc71;';
-            if (cat === '부족 스킬') return 'background:#3a1a1a; color:#e74c3c;';
-            if (cat.includes('직무')) return 'background:#1a1a3a; color:#4f6ef7;';
-            return 'background:#3a3a1a; color:#f39c12;';
-        }
-
-        // ───────── 기존 면접 로직 ─────────
-        async function loadMicrophones() {
-            try {
-                await navigator.mediaDevices.getUserMedia({ audio: true });
-                const devices = await navigator.mediaDevices.enumerateDevices();
-                const mics = devices.filter(d => d.kind === 'audioinput');
-                const select = document.getElementById('micSelect');
-                select.innerHTML = '';
-                mics.forEach(mic => {
-                    const option = document.createElement('option');
-                    option.value = mic.deviceId;
-                    option.textContent = mic.label || `마이크 ${mic.deviceId.slice(0, 8)}`;
-                    select.appendChild(option);
-                });
-            } catch (e) { console.error(e); }
-        }
-        window.addEventListener('load', loadMicrophones);
-
-        async function startSession() {
-            const jobUrl = document.getElementById('jobUrl').value.trim();
-            const resumeText = document.getElementById('resumeText').value.trim();
-            if (!jobUrl || !resumeText) { alert('URL과 이력서를 모두 입력해주세요'); return; }
-            document.getElementById('setupStatus').textContent = '분석 중... (30초 정도 걸려요)';
-            try {
-                const res = await fetch(`${API}/sessions`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ job_url: jobUrl, resume_text: resumeText })
-                });
-                const data = await res.json();
-                questions = data.questions;
-                currentSessionId = data.id; // 세션 생성 후 ID 저장. 
-                document.getElementById('setupCard').classList.add('hidden');
-                showQuestion();
-            } catch (e) {
-                document.getElementById('setupStatus').textContent = '오류 발생: ' + e.message;
-            }
-        }
-
-        function showQuestion() {
-            if (currentIdx >= questions.length) {
-                document.getElementById('questionCard').classList.add('hidden');
-                document.getElementById('doneCard').classList.remove('hidden');
-                loadSessionReport(currentSessionId);
-                return;
-            }
-            const q = questions[currentIdx];
-            document.getElementById('questionProgress').textContent = `(${currentIdx + 1}/${questions.length})`;
-            document.getElementById('questionText').textContent = q.question_text;
-            const badge = document.getElementById('categoryBadge');
-            badge.textContent = q.category;
-            badge.style.cssText = categoryStyle(q.category);
-            document.getElementById('inputMethodSelect').classList.remove('hidden');
-            document.getElementById('micSection').classList.add('hidden');
-            document.getElementById('fileSection').classList.add('hidden');
-            document.getElementById('transcriptSection').classList.add('hidden');
-            document.getElementById('feedbackCard').classList.add('hidden');
-            document.getElementById('recordStatus').textContent = '버튼을 눌러 답변 녹음을 시작하세요';
-            document.getElementById('submitStatus').textContent = '';
-            document.getElementById('timer').classList.add('hidden');
-            document.getElementById('visualizer').classList.add('hidden');
-            currentAudioBlob = null;
-            seconds = 0;
-            document.getElementById('questionCard').classList.remove('hidden');
-        }
-
-        function selectInputMethod(method) {
-            document.getElementById('inputMethodSelect').classList.add('hidden');
-            if (method === 'mic') document.getElementById('micSection').classList.remove('hidden');
-            else document.getElementById('fileSection').classList.remove('hidden');
-        }
-
-        function backToMethodSelect() {
-            document.getElementById('micSection').classList.add('hidden');
-            document.getElementById('fileSection').classList.add('hidden');
-            document.getElementById('transcriptSection').classList.add('hidden');
-            document.getElementById('inputMethodSelect').classList.remove('hidden');
-            if (isRecording) {
-                mediaRecorder.stop();
-                mediaRecorder.stream.getTracks().forEach(t => t.stop());
-                isRecording = false;
-                clearInterval(timerInterval);
-                cancelAnimationFrame(animationId);
-                if (audioContext) { audioContext.close(); audioContext = null; }
-                document.getElementById('recordBtn').classList.remove('recording');
-                document.getElementById('recordBtn').textContent = '🎙️';
-            }
-        }
-
-        function drawVisualizer() {
-            const canvas = document.getElementById('visualizer');
-            canvas.width = canvas.offsetWidth || 600;
-            canvas.height = 60;
-            const ctx = canvas.getContext('2d');
-            const bufferLength = analyser.frequencyBinCount;
-            const dataArray = new Uint8Array(bufferLength);
-            function draw() {
-                animationId = requestAnimationFrame(draw);
-                analyser.getByteFrequencyData(dataArray);
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-                const barWidth = (canvas.width / bufferLength) * 1.2;
-                let x = 0;
-                for (let i = 0; i < bufferLength; i++) {
-                    const barHeight = (dataArray[i] / 255) * canvas.height;
-                    const intensity = dataArray[i] / 255;
-                    ctx.fillStyle = `rgba(${Math.floor(79 + intensity * 100)}, ${Math.floor(110 + intensity * 50)}, 247, 0.85)`;
-                    ctx.beginPath();
-                    ctx.roundRect(x, canvas.height - barHeight, Math.max(barWidth - 1, 1), barHeight, 2);
-                    ctx.fill();
-                    x += barWidth + 1;
-                }
-            }
-            draw();
-        }
-
-        async function toggleRecord() {
-            if (!isRecording) {
-                const deviceId = document.getElementById('micSelect').value;
-                const stream = await navigator.mediaDevices.getUserMedia({
-                    audio: deviceId ? { deviceId: { exact: deviceId } } : true
-                });
-                mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' :
-                    MediaRecorder.isTypeSupported('audio/ogg;codecs=opus') ? 'audio/ogg;codecs=opus' : 'audio/webm';
-                mediaRecorder = new MediaRecorder(stream, { mimeType, audioBitsPerSecond: 128000 });
-                audioChunks = [];
-                mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
-                mediaRecorder.onstop = async () => {
-                    currentAudioBlob = new Blob(audioChunks, { type: mimeType });
-                    recordedDuration = seconds;
-                    await processRecording();
-                };
-                mediaRecorder.start();
-                isRecording = true;
-                seconds = 0;
-                audioContext = new AudioContext();
-                analyser = audioContext.createAnalyser();
-                analyser.fftSize = 128;
-                const source = audioContext.createMediaStreamSource(stream);
-                source.connect(analyser);
-                document.getElementById('visualizer').classList.remove('hidden');
-                drawVisualizer();
-                document.getElementById('recordBtn').classList.add('recording');
-                document.getElementById('recordBtn').textContent = '⏹️';
-                document.getElementById('recordStatus').textContent = '녹음 중...';
-                document.getElementById('timer').classList.remove('hidden');
-                timerInterval = setInterval(() => {
-                    seconds++;
-                    const m = String(Math.floor(seconds / 60)).padStart(2, '0');
-                    const s = String(seconds % 60).padStart(2, '0');
-                    document.getElementById('timer').textContent = `${m}:${s}`;
-                }, 1000);
-            } else {
-                mediaRecorder.stop();
-                mediaRecorder.stream.getTracks().forEach(t => t.stop());
-                isRecording = false;
-                clearInterval(timerInterval);
-                cancelAnimationFrame(animationId);
-                if (audioContext) { audioContext.close(); audioContext = null; }
-                document.getElementById('recordBtn').classList.remove('recording');
-                document.getElementById('recordBtn').textContent = '🎙️';
-                document.getElementById('recordStatus').textContent = '변환 중...';
-                document.getElementById('timer').classList.add('hidden');
-                document.getElementById('visualizer').classList.add('hidden');
-            }
-        }
-
-        async function processRecording() {
-            const formData = new FormData();
-            formData.append('audio', currentAudioBlob, 'answer.webm');
-            try {
-                const q = questions[currentIdx];
-                const res = await fetch(`${API}/questions/${q.id}/answers`, { method: 'POST', body: formData });
-                const data = await res.json();
-                const m = String(Math.floor(recordedDuration / 60)).padStart(2, '0');
-                const s = String(recordedDuration % 60).padStart(2, '0');
-                document.getElementById('durationBadge').textContent = `🕐 녹음 시간: ${m}:${s}`;
-                document.getElementById('transcriptText').value = data.answer_text;
-                document.getElementById('transcriptSection').classList.remove('hidden');
-                document.getElementById('recordStatus').textContent = '텍스트를 확인하고 수정 후 평가받으세요';
-                document.getElementById('transcriptSection').dataset.answerId = data.answer_id;
-            } catch (e) {
-                document.getElementById('recordStatus').textContent = '오류: ' + e.message;
-            }
-        }
-
-        async function submitTranscript() {
-            const editedText = document.getElementById('transcriptText').value.trim();
-            if (!editedText) { alert('텍스트를 입력해주세요'); return; }
-            document.getElementById('submitStatus').textContent = '평가 중...';
-            try {
-                const q = questions[currentIdx];
-                const res = await fetch(`${API}/evaluate-text`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ question_id: q.id, answer_text: editedText, duration_seconds: recordedDuration })
-                });
-                const feedback = await res.json();
-                showFeedback(feedback);
-            } catch (e) {
-                document.getElementById('submitStatus').textContent = '오류: ' + e.message;
-            }
-        }
-
-        async function submitFileAnswer() {
-            const fileInput = document.getElementById('audioFile');
-            if (!fileInput.files[0]) { alert('파일을 선택해주세요'); return; }
-            document.getElementById('submitStatus').textContent = '분석 중...';
-            const formData = new FormData();
-            formData.append('audio', fileInput.files[0]);
-            try {
-                const q = questions[currentIdx];
-                const res = await fetch(`${API}/questions/${q.id}/answers`, { method: 'POST', body: formData });
-                const data = await res.json();
-                const feedbackRes = await fetch(`${API}/answers/${data.answer_id}/feedback`);
-                const feedback = await feedbackRes.json();
-                showFeedback(feedback);
-            } catch (e) {
-                document.getElementById('submitStatus').textContent = '오류: ' + e.message;
-            }
-        }
-
-        function showFeedback(feedback) {
-            document.getElementById('answerText').textContent = `"${feedback.answer_text}"`;
-            document.getElementById('logicScore').textContent = feedback.logic_score;
-            document.getElementById('specificityScore').textContent = feedback.specificity_score;
-            document.getElementById('timeScore').textContent = feedback.time_score;
-            document.getElementById('totalScore').textContent = feedback.total_score;
-            document.getElementById('feedbackText').textContent = `💬 ${feedback.feedback}`;
-
-            // 모범 답안 표시
-            const q = questions[currentIdx];
-            if (q && q.model_answer) {
-                document.getElementById('modelAnswerText').textContent = q.model_answer;
-                document.getElementById('modelAnswerSection').classList.remove('hidden');
-            }
-            if (q && q.tip) {
-                document.getElementById('tipText').textContent = q.tip;
-                document.getElementById('tipSection').classList.remove('hidden');
-            }
-
-            document.getElementById('feedbackCard').classList.remove('hidden');
-            document.getElementById('submitStatus').textContent = '';
-        }
-
-        function nextQuestion() {
-            currentIdx++;
-            document.getElementById('feedbackCard').classList.add('hidden');
-            document.getElementById('modelAnswerSection').classList.add('hidden');
-            document.getElementById('tipSection').classList.add('hidden');
-            showQuestion();
-        }
-        async function loadSessionReport(sessionId) {
-            document.getElementById('reportLoading').classList.remove('hidden');
-            document.getElementById('reportContent').classList.add('hidden');
-
-            try {
-                const res = await fetch(`${API}/sessions/${sessionId}/report`);
-                const report = await res.json();
-
-                document.getElementById('reportOverallAvg').textContent =
-                    report.overall_avg !== null ? report.overall_avg : '-';
-                document.getElementById('reportAnsweredCount').textContent =
-                    `${report.answered_questions}개 질문 답변 완료 / 전체 ${report.total_questions}개`;
-
-                const hasStats = report.category_stats.some(c => c.avg_score !== null);
-                if (!hasStats) {
-                    document.getElementById('reportNoStats').classList.remove('hidden');
-                    document.getElementById('reportCategoryChart').classList.add('hidden');
-                } else {
-                    const categoryColors = {
-                        '보유 스킬': 'rgba(46, 204, 113, 0.8)',
-                        '부족 스킬': 'rgba(231, 76, 60, 0.8)',
-                        '직무/회사': 'rgba(79, 110, 247, 0.8)',
-                        '인성/경험': 'rgba(243, 156, 18, 0.8)',
-                    };
-                    if (chartInstances['reportCategory']) {
-                        chartInstances['reportCategory'].destroy();
+                    if (report.worst_answer) {
+                        document.getElementById('reportWorstQuestion').textContent = report.worst_answer.question;
+                        document.getElementById('reportWorstScore').textContent = `총점 ${report.worst_answer.score}/15`;
+                        document.getElementById('reportWorstFeedback').textContent = report.worst_answer.feedback || '';
+                    } else {
+                        document.getElementById('reportWorst').classList.add('hidden');
                     }
-                    const ctx = document.getElementById('reportCategoryChart');
-                    chartInstances['reportCategory'] = new Chart(ctx, {
-                        type: 'bar',
-                        data: {
-                            labels: report.category_stats.map(c => c.category),
-                            datasets: [{
-                                data: report.category_stats.map(c => c.avg_score ?? 0),
-                                backgroundColor: report.category_stats.map(c => categoryColors[c.category] || 'rgba(79,110,247,0.8)'),
-                                borderRadius: 6,
-                            }]
-                        },
-                        options: {
-                            indexAxis: 'y',
-                            responsive: true,
-                            scales: {
-                                x: { min: 0, max: 15, ticks: { color: '#666' }, grid: { color: '#1a1d27' } },
-                                y: { ticks: { color: '#aaa' }, grid: { display: false } }
-                            },
-                            plugins: {
-                                legend: { display: false },
-                                tooltip: {
-                                    callbacks: {
-                                        label: (ctx) => ctx.raw > 0 ? `평균 총점: ${ctx.raw}` : '답변 없음'
-                                    }
-                                }
-                            }
-                        }
-                    });
+
+                    document.getElementById('reportLoading').classList.add('hidden');
+                    document.getElementById('reportContent').classList.remove('hidden');
+
+                } catch (e) {
+                    document.getElementById('reportLoading').textContent = '리포트 불러오기 실패: ' + e.message;
                 }
-
-                if (report.best_answer) {
-                    document.getElementById('reportBestQuestion').textContent = report.best_answer.question;
-                    document.getElementById('reportBestScore').textContent = `총점 ${report.best_answer.score}/15`;
-                    document.getElementById('reportBestFeedback').textContent = report.best_answer.feedback || '';
-                } else {
-                    document.getElementById('reportBest').classList.add('hidden');
-                }
-
-                if (report.worst_answer) {
-                    document.getElementById('reportWorstQuestion').textContent = report.worst_answer.question;
-                    document.getElementById('reportWorstScore').textContent = `총점 ${report.worst_answer.score}/15`;
-                    document.getElementById('reportWorstFeedback').textContent = report.worst_answer.feedback || '';
-                } else {
-                    document.getElementById('reportWorst').classList.add('hidden');
-                }
-
-                document.getElementById('reportLoading').classList.add('hidden');
-                document.getElementById('reportContent').classList.remove('hidden');
-
-            } catch (e) {
-                document.getElementById('reportLoading').textContent = '리포트 불러오기 실패: ' + e.message;
             }
-        }
-    </script>
+        </script>
 </body>
 
 </html>

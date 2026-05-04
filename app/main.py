@@ -4,6 +4,7 @@ from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from app.api.v1 import sessions
 from app.api.v1 import answers
+from app.api.v1 import cover_letter
 
 app = FastAPI(
     title="Mock Interview AI",
@@ -21,7 +22,7 @@ app.add_middleware(
 
 app.include_router(sessions.router, prefix="/api/v1", tags=["sessions"])
 app.include_router(answers.router, prefix="/api/v1", tags=["answers"])
-
+app.include_router(cover_letter.router, prefix="/api/v1", tags=["cover-letter"])
 app.mount("/static", StaticFiles(directory="frontend"), name="static")
 
 

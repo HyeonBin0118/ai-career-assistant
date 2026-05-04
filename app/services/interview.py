@@ -171,3 +171,51 @@ def create_session(db: Session, job_url: str, resume_text: str) -> models.Interv
     db.commit()
     db.refresh(session)
     return session
+
+def generate_cover_letter(resume_text: str, job_info: dict, match_result: dict, length: int = 500, custom_format: str = "") -> dict:
+    if custom_format:
+        format_guide = f"""
+아래 자소서 형식에 맞게 작성해줘. 각 항목명을 JSON 키로 그대로 사용해줘. 번호는 제거해줘.
+형식:
+{custom_format}
+"""
+    else:
+        format_guide = """아래 세 가지 항목으로 작성해줘. JSON 키는 반드시 한글로 사용해줘. - 지원동기 - 직무경험 - 입사후포부"""
+
+    response = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[{"role": "user", "content": f"""
+이력서, 채용공고, 매칭 결과를 바탕으로 자소서 초안을 작성해줘.
+{format_guide}
+각 항목 {length}자 내외로 작성해줘.
+채용공고: {json.dumps(job_info, ensure_ascii=False)}
+매칭결과: {json.dumps(match_result, ensure_ascii=False)}
+이력서: {resume_text[:3000]}
+JSON만 반환해.
+"""}],
+        temperature=0.7
+    )
+    result = response.choices[0].message.content.replace("```json", "").replace("```", "").strip()
+    return json.loads(result)
+
+
+def evaluate_cover_letter(cover_letter: dict, job_info: dict) -> dict:
+    response = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[{"role": "user", "content": f"""
+아래 자소서를 채용공고 기준으로 평가해줘.
+평가 항목:
+- specificity: 구체성 (0~10)
+- relevance: 직무 연관성 (0~10)
+- structure: 구조/논리성 (0~10)
+- total: 총점 (0~30)
+- feedback: 한 줄 피드백
+
+채용공고: {json.dumps(job_info, ensure_ascii=False)}
+자소서: {json.dumps(cover_letter, ensure_ascii=False)}
+JSON만 반환해.
+"""}],
+        temperature=0
+    )
+    result = response.choices[0].message.content.replace("```json", "").replace("```", "").strip()
+    return json.loads(result)
