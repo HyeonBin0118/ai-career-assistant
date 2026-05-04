@@ -579,7 +579,48 @@
 
             <div class="card hidden" id="doneCard">
                 <h2>🎉 면접 완료</h2>
-                <p style="color:#aaa; line-height:1.8;">모든 질문에 답변했습니다.<br>수고하셨습니다!</p>
+                <div id="reportLoading" style="text-align:center; color:#888; padding:20px 0;">리포트 생성 중...</div>
+                <div id="reportContent" class="hidden">
+                    <!-- 전체 점수 -->
+                    <div
+                        style="text-align:center; padding:16px 0; margin-bottom:16px; border-bottom:1px solid #2a2d3a;">
+                        <div style="font-size:0.82rem; color:#888; margin-bottom:6px;">전체 평균 점수</div>
+                        <div id="reportOverallAvg" style="font-size:3rem; font-weight:700; color:#4f6ef7;">-</div>
+                        <div style="font-size:0.8rem; color:#666;">/15점</div>
+                        <div id="reportAnsweredCount" style="font-size:0.82rem; color:#888; margin-top:6px;"></div>
+                    </div>
+
+                    <!-- 카테고리 차트 -->
+                    <div style="margin-bottom:20px;">
+                        <div style="font-size:0.85rem; color:#aaa; margin-bottom:10px;">📊 카테고리별 평균 점수</div>
+                        <div id="reportNoStats" class="hidden"
+                            style="font-size:0.82rem; color:#555; text-align:center; padding:12px 0;">답변 데이터가 없습니다</div>
+                        <canvas id="reportCategoryChart" height="100"></canvas>
+                    </div>
+
+                    <!-- 잘한 / 못한 질문 -->
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:20px;">
+                        <div id="reportBest"
+                            style="background:#0f1117; border:1px solid #1a3a1a; border-radius:8px; padding:12px;">
+                            <div style="font-size:0.78rem; color:#2ecc71; margin-bottom:6px;">✅ 가장 잘한 답변</div>
+                            <div id="reportBestQuestion"
+                                style="font-size:0.82rem; color:#ccc; line-height:1.5; margin-bottom:6px;"></div>
+                            <div id="reportBestScore" style="font-size:0.85rem; color:#2ecc71; font-weight:600;"></div>
+                            <div id="reportBestFeedback"
+                                style="font-size:0.78rem; color:#666; margin-top:4px; line-height:1.4;"></div>
+                        </div>
+                        <div id="reportWorst"
+                            style="background:#0f1117; border:1px solid #3a1a1a; border-radius:8px; padding:12px;">
+                            <div style="font-size:0.78rem; color:#e74c3c; margin-bottom:6px;">⚠️ 가장 부족한 답변</div>
+                            <div id="reportWorstQuestion"
+                                style="font-size:0.82rem; color:#ccc; line-height:1.5; margin-bottom:6px;"></div>
+                            <div id="reportWorstScore" style="font-size:0.85rem; color:#e74c3c; font-weight:600;"></div>
+                            <div id="reportWorstFeedback"
+                                style="font-size:0.78rem; color:#666; margin-top:4px; line-height:1.4;"></div>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="nav-btns" style="margin-top:16px;">
                     <button class="btn-ghost" onclick="goHistory()">📂 연습 기록 보기</button>
                     <button class="btn-primary" onclick="location.reload()">다시 시작</button>
@@ -629,6 +670,7 @@
         let animationId = null;
         let recordedDuration = 0;
         let chartInstances = {};
+        let currentSessionId = null;
 
         // ───────── 화면 전환 ─────────
         function goHistory() {
@@ -891,6 +933,7 @@
                 });
                 const data = await res.json();
                 questions = data.questions;
+                currentSessionId = data.id; // 세션 생성 후 ID 저장. 
                 document.getElementById('setupCard').classList.add('hidden');
                 showQuestion();
             } catch (e) {
@@ -902,6 +945,7 @@
             if (currentIdx >= questions.length) {
                 document.getElementById('questionCard').classList.add('hidden');
                 document.getElementById('doneCard').classList.remove('hidden');
+                loadSessionReport(currentSessionId);
                 return;
             }
             const q = questions[currentIdx];
@@ -1108,6 +1152,86 @@
             document.getElementById('modelAnswerSection').classList.add('hidden');
             document.getElementById('tipSection').classList.add('hidden');
             showQuestion();
+        }
+        async function loadSessionReport(sessionId) {
+            document.getElementById('reportLoading').classList.remove('hidden');
+            document.getElementById('reportContent').classList.add('hidden');
+
+            try {
+                const res = await fetch(`${API}/sessions/${sessionId}/report`);
+                const report = await res.json();
+
+                document.getElementById('reportOverallAvg').textContent =
+                    report.overall_avg !== null ? report.overall_avg : '-';
+                document.getElementById('reportAnsweredCount').textContent =
+                    `${report.answered_questions}개 질문 답변 완료 / 전체 ${report.total_questions}개`;
+
+                const hasStats = report.category_stats.some(c => c.avg_score !== null);
+                if (!hasStats) {
+                    document.getElementById('reportNoStats').classList.remove('hidden');
+                    document.getElementById('reportCategoryChart').classList.add('hidden');
+                } else {
+                    const categoryColors = {
+                        '보유 스킬': 'rgba(46, 204, 113, 0.8)',
+                        '부족 스킬': 'rgba(231, 76, 60, 0.8)',
+                        '직무/회사': 'rgba(79, 110, 247, 0.8)',
+                        '인성/경험': 'rgba(243, 156, 18, 0.8)',
+                    };
+                    if (chartInstances['reportCategory']) {
+                        chartInstances['reportCategory'].destroy();
+                    }
+                    const ctx = document.getElementById('reportCategoryChart');
+                    chartInstances['reportCategory'] = new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: report.category_stats.map(c => c.category),
+                            datasets: [{
+                                data: report.category_stats.map(c => c.avg_score ?? 0),
+                                backgroundColor: report.category_stats.map(c => categoryColors[c.category] || 'rgba(79,110,247,0.8)'),
+                                borderRadius: 6,
+                            }]
+                        },
+                        options: {
+                            indexAxis: 'y',
+                            responsive: true,
+                            scales: {
+                                x: { min: 0, max: 15, ticks: { color: '#666' }, grid: { color: '#1a1d27' } },
+                                y: { ticks: { color: '#aaa' }, grid: { display: false } }
+                            },
+                            plugins: {
+                                legend: { display: false },
+                                tooltip: {
+                                    callbacks: {
+                                        label: (ctx) => ctx.raw > 0 ? `평균 총점: ${ctx.raw}` : '답변 없음'
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
+
+                if (report.best_answer) {
+                    document.getElementById('reportBestQuestion').textContent = report.best_answer.question;
+                    document.getElementById('reportBestScore').textContent = `총점 ${report.best_answer.score}/15`;
+                    document.getElementById('reportBestFeedback').textContent = report.best_answer.feedback || '';
+                } else {
+                    document.getElementById('reportBest').classList.add('hidden');
+                }
+
+                if (report.worst_answer) {
+                    document.getElementById('reportWorstQuestion').textContent = report.worst_answer.question;
+                    document.getElementById('reportWorstScore').textContent = `총점 ${report.worst_answer.score}/15`;
+                    document.getElementById('reportWorstFeedback').textContent = report.worst_answer.feedback || '';
+                } else {
+                    document.getElementById('reportWorst').classList.add('hidden');
+                }
+
+                document.getElementById('reportLoading').classList.add('hidden');
+                document.getElementById('reportContent').classList.remove('hidden');
+
+            } catch (e) {
+                document.getElementById('reportLoading').textContent = '리포트 불러오기 실패: ' + e.message;
+            }
         }
     </script>
 </body>

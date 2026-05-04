@@ -102,3 +102,68 @@ def get_category_stats(session_id: int, db: Session = Depends(get_db)):
         })
 
     return {"session_id": session_id, "categories": result}
+
+@router.get("/sessions/{session_id}/report")
+def get_session_report(session_id: int, db: Session = Depends(get_db)):
+    session = db.query(models.InterviewSession).filter(
+        models.InterviewSession.id == session_id
+    ).first()
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    all_scores = []
+    category_stats = {}
+    best_answer = None
+    worst_answer = None
+
+    for question in session.questions:
+        category = question.category
+        if category not in category_stats:
+            category_stats[category] = {"scores": [], "question_count": 0}
+        category_stats[category]["question_count"] += 1
+
+        for answer in question.answers:
+            if answer.evaluation and answer.evaluation.total_score is not None:
+                score = answer.evaluation.total_score
+                all_scores.append(score)
+                category_stats[category]["scores"].append(score)
+
+                if best_answer is None or score > best_answer["score"]:
+                    best_answer = {
+                        "question": question.question_text,
+                        "category": category,
+                        "score": score,
+                        "feedback": answer.evaluation.feedback,
+                    }
+                if worst_answer is None or score < worst_answer["score"]:
+                    worst_answer = {
+                        "question": question.question_text,
+                        "category": category,
+                        "score": score,
+                        "feedback": answer.evaluation.feedback,
+                    }
+
+    category_result = []
+    for cat, data in category_stats.items():
+        scores = data["scores"]
+        category_result.append({
+            "category": cat,
+            "question_count": data["question_count"],
+            "answer_count": len(scores),
+            "avg_score": round(sum(scores) / len(scores), 1) if scores else None,
+        })
+
+    return {
+        "session_id": session_id,
+        "company": session.company,
+        "position": session.position,
+        "total_questions": len(session.questions),
+        "answered_questions": len(set(
+            a.question_id for q in session.questions for a in q.answers
+        )),
+        "overall_avg": round(sum(all_scores) / len(all_scores), 1) if all_scores else None,
+        "overall_total": sum(all_scores),
+        "category_stats": category_result,
+        "best_answer": best_answer,
+        "worst_answer": worst_answer,
+    }
