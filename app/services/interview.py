@@ -15,7 +15,14 @@ client = OpenAI(api_key=settings.OPENAI_API_KEY)
 def crawl_job_posting(url: str) -> str:
     headers = {"User-Agent": "Mozilla/5.0"}
     response = httpx.get(url, headers=headers, follow_redirects=True, timeout=10)
-    soup = BeautifulSoup(response.text, "html.parser")
+    
+    # 인코딩 자동 감지 후 디코딩
+    try:
+        text_content = response.content.decode('utf-8')
+    except UnicodeDecodeError:
+        text_content = response.content.decode('euc-kr', errors='ignore')
+
+    soup = BeautifulSoup(text_content, "html.parser")
 
     for tag in soup(["script", "style", "nav", "header", "footer", "aside"]):
         tag.decompose()
@@ -49,6 +56,7 @@ JSON만 반환해.
         temperature=0
     )
     result = response.choices[0].message.content.replace("```json", "").replace("```", "").strip()
+    print(f"[DEBUG] extract_job_info result: {result[:200]}")
     return json.loads(result)
 
 

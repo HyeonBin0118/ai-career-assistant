@@ -5,6 +5,7 @@ from app.schemas import SessionCreate, SessionOut, SessionHistory, SessionListIt
 from app.services import interview
 from app import models
 from typing import List
+from pydantic import BaseModel
 
 router = APIRouter()
 
@@ -19,6 +20,8 @@ def create_session(body: SessionCreate, db: Session = Depends(get_db)):
         )
         return session
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -64,3 +67,38 @@ def get_session_history(session_id: int, db: Session = Depends(get_db)):
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
     return session
+
+
+@router.get("/sessions/{session_id}/category-stats")
+def get_category_stats(session_id: int, db: Session = Depends(get_db)):
+    session = db.query(models.InterviewSession).filter(
+        models.InterviewSession.id == session_id
+    ).first()
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    stats = {}
+    for question in session.questions:
+        category = question.category
+        scores = []
+        for answer in question.answers:
+            if answer.evaluation and answer.evaluation.total_score is not None:
+                scores.append(answer.evaluation.total_score)
+        if category not in stats:
+            stats[category] = {"scores": [], "question_count": 0}
+        stats[category]["scores"].extend(scores)
+        stats[category]["question_count"] += 1
+
+    result = []
+    for category, data in stats.items():
+        scores = data["scores"]
+        result.append({
+            "category": category,
+            "question_count": data["question_count"],
+            "answer_count": len(scores),
+            "avg_score": round(sum(scores) / len(scores), 1) if scores else None,
+            "max_score": max(scores) if scores else None,
+            "min_score": min(scores) if scores else None,
+        })
+
+    return {"session_id": session_id, "categories": result}
