@@ -58,7 +58,7 @@ Whisper 변환 + GPT 평가 + 모범 답안 비교
 ## 주요 기능
 
 **1. 자소서 생성 + 품질 평가**
-채용공고 URL과 이력서를 입력하면 자소서 초안을 생성합니다. 길이(200~1000자)와 포맷을 직접 설정할 수 있고, 생성된 자소서를 구체성·직무연관성·구조/논리성 세 가지 지표(0~10점)로 자동 평가합니다. 수정 후 재평가도 가능합니다.
+채용공고 URL과 이력서를 입력하면 자소서 초안을 생성합니다. 길이(200-1000자)와 포맷을 직접 설정할 수 있고, 생성된 자소서를 구체성·직무연관성·구조/논리성 세 가지 지표(0-10점)로 자동 평가합니다. 수정 후 재평가도 가능합니다.
 
 **2. 맞춤형 면접 질문 생성**
 이력서와 채용공고를 분석해 보유 스킬, 부족 스킬, 직무, 인성 4개 카테고리로 면접 질문 8개를 생성합니다.
@@ -225,7 +225,6 @@ ai-career-assistant/
 ---
 
 ## 설치 및 실행
-
 ```bash
 # 1. 레포 클론
 git clone https://github.com/HyeonBin0118/ai-career-assistant.git
@@ -239,7 +238,8 @@ pip install -r requirements.txt
 # 3. 환경변수 설정
 cp .env.example .env
 # .env 파일에서 OPENAI_API_KEY 입력
-# DATABASE_URL 호스트를 localhost로 변경
+# DATABASE_URL 호스트 변경 (Docker 컨테이너 내부: db / 로컬 uvicorn 실행: localhost)
+# 예시: postgresql://postgres:postgres@localhost:5432/mock_interview
 
 # 4. Docker Compose 실행
 docker-compose up -d
