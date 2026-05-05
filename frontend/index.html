@@ -1319,19 +1319,37 @@
             async function submitFileAnswer() {
                 const fileInput = document.getElementById('audioFile');
                 if (!fileInput.files[0]) { alert('파일을 선택해주세요'); return; }
-                document.getElementById('submitStatus').textContent = '분석 중...';
+                document.getElementById('submitStatus').textContent = '업로드 중...';
                 const formData = new FormData();
                 formData.append('audio', fileInput.files[0]);
                 try {
                     const q = questions[currentIdx];
                     const res = await fetch(`${API}/questions/${q.id}/answers`, { method: 'POST', body: formData });
                     const data = await res.json();
-                    const feedbackRes = await fetch(`${API}/answers/${data.answer_id}/feedback`);
-                    const feedback = await feedbackRes.json();
-                    showFeedback(feedback);
+
+                    // 즉시 응답 확인 (비동기 처리 접수됨)
+                    document.getElementById('submitStatus').textContent = '음성 분석 중... (백그라운드 처리)';
+
+                    // 폴링: 0.5초마다 상태 확인
+                    const pollResult = await pollAnswerStatus(data.answer_id);
+                    showFeedback(pollResult);
+
                 } catch (e) {
                     document.getElementById('submitStatus').textContent = '오류: ' + e.message;
                 }
+            }
+
+            async function pollAnswerStatus(answerId, maxRetries = 60) {
+                for (let i = 0; i < maxRetries; i++) {
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                    const res = await fetch(`${API}/answers/${answerId}/status`);
+                    const data = await res.json();
+                    if (data.status === 'completed') {
+                        return data;
+                    }
+                    document.getElementById('submitStatus').textContent = `음성 분석 중... (${i + 1}초)`;
+                }
+                throw new Error('처리 시간이 초과됐습니다');
             }
 
             function showFeedback(feedback) {

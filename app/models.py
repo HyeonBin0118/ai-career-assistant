@@ -55,6 +55,7 @@ class Answer(Base):
     answer_text = Column(Text)                      # Whisper 변환 텍스트
     audio_path = Column(String(500))                # 음성 파일 경로
     duration_seconds = Column(Float)                # 답변 시간
+    is_processed = Column(Integer, default=0)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     question = relationship("Question", back_populates="answers")

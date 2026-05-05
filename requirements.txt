@@ -48,3 +48,4 @@ websockets==16.0
 zope.event==6.2
 zope.interface==8.4
 pytest==9.0.3
+celery==5.3.6

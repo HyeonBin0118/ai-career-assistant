@@ -30,5 +30,17 @@ services:
     ports:
       - "6379:6379"
 
+ celery_worker:
+    build: .
+    container_name: mock_interview_celery
+    command: celery -A app.celery_app.celery worker --loglevel=info
+    env_file:
+      - .env
+    depends_on:
+      - db
+      - redis
+    volumes:
+      - ./app:/code/app
+      
 volumes:
   postgres_data:
