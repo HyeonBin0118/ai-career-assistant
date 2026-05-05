@@ -14,7 +14,7 @@ def test_health_check():
 def test_root():
     response = client.get("/")
     assert response.status_code == 200
-    assert response.json()["service"] == "Mock Interview AI"
+    assert "text/html" in response.headers["content-type"]
 
 
 def test_create_session_missing_fields():
