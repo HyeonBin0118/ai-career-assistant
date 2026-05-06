@@ -16,7 +16,7 @@
 
 채용공고 분석부터 자소서 작성, 면접 연습, 결과 리포트까지 한 세션에서 완결되는 AI 백엔드 통합 플랫폼.
 
-[Job Agent 시리즈](https://github.com/HyeonBin0118/job-agent-v3)와 [Mock Interview AI](https://github.com/HyeonBin0118/mock-interview-ai)를 하나의 백엔드로 통합하면서, FastAPI + 비동기 처리 구조로 재설계한 프로젝트
+[Job Agent 시리즈](https://github.com/HyeonBin0118/job-agent-v3)와 [Mock Interview AI](https://github.com/HyeonBin0118/mock-interview-ai)를 하나의 백엔드로 통합하면서, FastAPI + 비동기 처리 구조로 재설계한 프로젝트.
 
 ## 핵심 성과
 
@@ -107,7 +107,8 @@ InterviewSession  ->  Question  ->  Answer  ->  EvaluationResult
 
 ## 정량 평가
 
-### 1. Redis 캐싱 효과 (단계별 측정) - 같은 URL을 두 번 요청했을 때 단계별 응답 시간 비교
+### 1. Redis 캐싱 효과 (단계별 측정)
+같은 URL을 두 번 요청했을 때 단계별 응답 시간 비교
 
 | 단계 | 캐시 적용 전 | 캐시 적용 후 |
 |---|---|---|
@@ -116,7 +117,7 @@ InterviewSession  ->  Question  ->  Answer  ->  EvaluationResult
 | 질문 생성 | 22,829ms | 21,254ms |
 | **전체** | **34,514ms** | **25,737ms** |
 
->캐싱으로 약 **8,800ms (25%) 단축. 질문 생성이 전체의 65% 이상을 차지하는 병목으로 측정.
+>캐싱으로 약 **8,800ms (25%) 단축**. 질문 생성이 전체의 65% 이상을 차지하는 병목으로 측정.
 
 ### 2. 답변 평가 일관성 (temperature=0, n=10)
 
@@ -137,12 +138,12 @@ InterviewSession  ->  Question  ->  Answer  ->  EvaluationResult
 | 즉시 응답 평균 | 2.091초 |
 | 즉시 응답 최소 | 2.070초 |
 | 즉시 응답 최대 | 2.138초 |
-| 기존 동기 처리 | 30초 이상 |
+| 기존 동기 처리 | 30초+ |
 
 > 사용자 체감 대기시간이 30초 이상에서 2.1초로 93% 단축.
 
-> 기존 : 음성 파일 업로드 후 Whisper 변환과 GPT 평가가 모두 완료될 때까지 사용자 대기.
-> 개선 : Celery 워커가 백그라운드에서 처리하도록 분리 -> 서버는 파일 접수 즉시 응답을 반환하고, 프론트엔드가 0.5초 간격으로 완료 여부를 폴링.
+> 기존: 음성 파일 업로드 후 Whisper 변환과 GPT 평가가 모두 완료될 때까지 사용자 대기.
+> 개선: Celery 워커가 백그라운드에서 처리하도록 분리 -> 서버는 파일 접수 즉시 응답을 반환하고, 프론트엔드가 0.5초 간격으로 완료 여부를 폴링.
 
 > Redis가 캐시와 메시지 브로커 두 가지 역할을 동시에 수행함.
 
