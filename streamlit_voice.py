@@ -4,6 +4,8 @@ load_dotenv(dotenv_path=r"C:\Users\VisualS2\Desktop\AI_LAB\git\ai-career-assista
 import streamlit as st
 import sys
 import os
+import threading
+import time
 
 sys.path.append(os.path.dirname(__file__))
 
@@ -11,6 +13,7 @@ from voice.recorder import record_until_silence, cleanup_audio_file
 from voice.stt import transcribe
 from voice.tts import speak
 from openai import OpenAI
+from app.services.interview import crawl_job_posting, extract_job_info
 
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
@@ -25,27 +28,45 @@ SYSTEM_PROMPT = """당신은 IT 기업의 시니어 개발자 면접관입니다
 - 10턴이 지나면 면접을 마무리하세요"""
 
 
-def get_opening_question(name: str, role: str) -> str:
+def build_job_context(job_info: dict) -> str:
+    if not job_info:
+        return ""
+    return f"""
+채용공고 정보:
+- 회사: {job_info.get('company', '')}
+- 직무: {job_info.get('position', '')}
+- 필수 스킬: {job_info.get('required_skills', [])}
+- 우대 스킬: {job_info.get('preferred_skills', [])}
+- 요약: {job_info.get('summary', '')}
+
+위 공고 내용을 바탕으로 해당 직무에 맞는 질문을 하세요.
+"""
+
+
+def get_opening_question(name: str, role: str, job_info: dict = None) -> str:
+    job_context = build_job_context(job_info)
     response = client.chat.completions.create(
         model="gpt-4o-mini",
         messages=[
-            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "system", "content": SYSTEM_PROMPT + job_context},
             {"role": "user", "content": f"지원자 이름: {name}, 지원 직무: {role}. 면접을 시작해주세요. 첫 질문을 해주세요."}
         ]
     )
     return response.choices[0].message.content
 
 
-def get_next_question(conversation_history: list) -> str:
+def get_next_question(conversation_history: list, job_info: dict = None) -> str:
+    job_context = build_job_context(job_info)
     response = client.chat.completions.create(
         model="gpt-4o-mini",
-        messages=[{"role": "system", "content": SYSTEM_PROMPT}] + conversation_history
+        messages=[{"role": "system", "content": SYSTEM_PROMPT + job_context}] + conversation_history
     )
     return response.choices[0].message.content
 
 
 def run_interview():
-    # 마이크 선택 사이드바 추가
+    st.title("🎤 AI 음성 면접 시뮬레이터")
+
     import sounddevice as sd
     devices = sd.query_devices()
     input_devices = {
@@ -53,6 +74,7 @@ def run_interview():
         for i, d in enumerate(devices)
         if d['max_input_channels'] > 0
     }
+
     with st.sidebar:
         st.markdown("### 🎙️ 마이크 설정")
         selected = st.selectbox("마이크 선택", list(input_devices.keys()))
@@ -83,34 +105,45 @@ def run_interview():
         st.session_state.silence_threshold = threshold_options[selected_threshold]
         st.caption("값이 높을수록 더 쉽게 무음으로 판단합니다.")
 
-    # 세션 상태 초기화
     if "started" not in st.session_state:
         st.session_state.started = False
         st.session_state.history = []
         st.session_state.turn = 0
         st.session_state.finished = False
+        st.session_state.job_info = None
 
-    # 시작 전 입력폼
     if not st.session_state.started:
         st.markdown("면접 정보를 입력하고 시작하세요.")
         name = st.text_input("이름", placeholder="홍길동")
         role = st.text_input("지원 직무", placeholder="AI 백엔드 개발자")
+        job_url = st.text_input("채용공고 URL (선택)", placeholder="https://www.jobkorea.co.kr/...")
+        st.caption("URL 입력 시 공고 맞춤 질문이 생성됩니다.")
 
         if st.button("면접 시작", disabled=not (name and role)):
+            job_info = None
+            if job_url:
+                with st.spinner("채용공고 분석 중..."):
+                    try:
+                        content = crawl_job_posting(job_url)
+                        job_info = extract_job_info(content)
+                        st.success(f"✅ {job_info.get('company', '')} — {job_info.get('position', '')} 공고 분석 완료")
+                    except Exception as e:
+                        st.warning(f"공고 분석 실패: {e}. 일반 질문으로 진행합니다.")
+
             with st.spinner("면접관이 준비 중입니다..."):
-                first_question = get_opening_question(name, role)
+                first_question = get_opening_question(name, role, job_info)
                 st.session_state.history.append({
                     "role": "assistant",
                     "content": first_question
                 })
                 st.session_state.name = name
                 st.session_state.role = role
+                st.session_state.job_info = job_info
                 st.session_state.started = True
                 speak(first_question)
             st.rerun()
         return
 
-    # 면접 종료
     if st.session_state.finished:
         st.success("면접이 종료되었습니다.")
         st.markdown("### 📋 대화 기록")
@@ -124,7 +157,10 @@ def run_interview():
             st.rerun()
         return
 
-    # 대화 기록 출력
+    if st.session_state.job_info:
+        job = st.session_state.job_info
+        st.caption(f"📌 {job.get('company', '')} — {job.get('position', '')} 공고 기반 면접")
+
     st.markdown(f"### 💬 면접 진행 중 (턴: {st.session_state.turn + 1} / 10)")
     for msg in st.session_state.history:
         role_label = "🤵 면접관" if msg["role"] == "assistant" else "🙋 나"
@@ -132,19 +168,15 @@ def run_interview():
 
     st.divider()
 
-    # 녹음 버튼
     if st.button("🎙️ 답변하기 (말이 끝나면 자동 종료)"):
-        import threading
-        import time
-
         shared_state = {"level": 0.0, "done": False, "path": None}
 
         def record_thread():
             path = record_until_silence(
-            device_index=st.session_state.get("mic_index"),
-            shared_state=shared_state,
-            silence_threshold=st.session_state.get("silence_threshold", 0.02)
-        )
+                device_index=st.session_state.get("mic_index"),
+                shared_state=shared_state,
+                silence_threshold=st.session_state.get("silence_threshold", 0.02)
+            )
             shared_state["path"] = path
             shared_state["done"] = True
 
@@ -185,7 +217,6 @@ def run_interview():
                 })
                 st.session_state.turn += 1
 
-                # 10턴 이상이면 종료
                 if st.session_state.turn >= 10:
                     closing = "수고하셨습니다. 오늘 면접은 여기서 마치겠습니다. 좋은 결과 있으시길 바랍니다."
                     st.session_state.history.append({
@@ -196,7 +227,10 @@ def run_interview():
                     st.session_state.finished = True
                 else:
                     with st.spinner("면접관이 생각 중..."):
-                        next_q = get_next_question(st.session_state.history)
+                        next_q = get_next_question(
+                            st.session_state.history,
+                            job_info=st.session_state.get("job_info")
+                        )
                         st.session_state.history.append({
                             "role": "assistant",
                             "content": next_q
