@@ -105,6 +105,17 @@ def run_interview():
         st.session_state.silence_threshold = threshold_options[selected_threshold]
         st.caption("값이 높을수록 더 쉽게 무음으로 판단합니다.")
 
+        #마이크 없는 경우 테스트용 텍스트 입력으로 진행 
+        st.markdown("### ⌨️ 입력 방식")
+        input_mode = st.radio(
+            "답변 입력 방식",
+            ["🎙️ 음성 입력", "⌨️ 텍스트 입력"],
+            index=1
+        )
+        st.session_state.input_mode = input_mode
+    
+    
+
     if "started" not in st.session_state:
         st.session_state.started = False
         st.session_state.history = []
@@ -168,48 +179,10 @@ def run_interview():
 
     st.divider()
 
-    if st.button("🎙️ 답변하기 (말이 끝나면 자동 종료)"):
-        shared_state = {"level": 0.0, "done": False, "path": None}
-
-        def record_thread():
-            path = record_until_silence(
-                device_index=st.session_state.get("mic_index"),
-                shared_state=shared_state,
-                silence_threshold=st.session_state.get("silence_threshold", 0.02)
-            )
-            shared_state["path"] = path
-            shared_state["done"] = True
-
-        t = threading.Thread(target=record_thread)
-        t.start()
-
-        ui_status = st.empty()
-        start_time = time.time()
-
-        while not shared_state["done"]:
-            elapsed = time.time() - start_time
-            level = shared_state["level"]
-            bars = min(int(level * 400), 20)
-            bar_str = "█" * bars + "░" * (20 - bars)
-            ui_status.markdown(
-                f"🎙️ **녹음 중** &nbsp;&nbsp; ⏱️ **{elapsed:.1f}초**\n\n"
-                f"`{bar_str}`"
-            )
-            time.sleep(0.05)
-
-        t.join()
-        elapsed_total = time.time() - start_time
-        ui_status.markdown(f"✅ 녹음 완료 &nbsp;&nbsp; ⏱️ **{elapsed_total:.1f}초**")
-        audio_path = shared_state["path"]
-
-        if audio_path:
-            with st.spinner("답변 인식 중..."):
-                answer_text = transcribe(
-                    audio_path,
-                    model_size=st.session_state.get("whisper_model", "medium")
-                )
-                cleanup_audio_file(audio_path)
-
+    if st.session_state.get("input_mode") == "⌨️ 텍스트 입력":
+        text_answer = st.text_area("답변을 입력하세요", placeholder="답변을 입력하고 제출 버튼을 누르세요", height=100)
+        if st.button("제출"):
+            answer_text = text_answer.strip()
             if answer_text:
                 st.session_state.history.append({
                     "role": "user",
@@ -236,12 +209,84 @@ def run_interview():
                             "content": next_q
                         })
                         speak(next_q)
-
                 st.rerun()
             else:
-                st.warning("답변이 인식되지 않았습니다. 다시 시도해주세요.")
-        else:
-            st.warning("녹음에 실패했습니다. 다시 시도해주세요.")
+                st.warning("답변을 입력해주세요.")
+    else:
+        if st.button("🎙️ 답변하기 (말이 끝나면 자동 종료)"):
+            shared_state = {"level": 0.0, "done": False, "path": None}
+
+            def record_thread():
+                path = record_until_silence(
+                    device_index=st.session_state.get("mic_index"),
+                    shared_state=shared_state,
+                    silence_threshold=st.session_state.get("silence_threshold", 0.02)
+                )
+                shared_state["path"] = path
+                shared_state["done"] = True
+
+            t = threading.Thread(target=record_thread)
+            t.start()
+
+            ui_status = st.empty()
+            start_time = time.time()
+
+            while not shared_state["done"]:
+                elapsed = time.time() - start_time
+                level = shared_state["level"]
+                bars = min(int(level * 400), 20)
+                bar_str = "█" * bars + "░" * (20 - bars)
+                ui_status.markdown(
+                    f"🎙️ **녹음 중** &nbsp;&nbsp; ⏱️ **{elapsed:.1f}초**\n\n"
+                    f"`{bar_str}`"
+                )
+                time.sleep(0.05)
+
+            t.join()
+            elapsed_total = time.time() - start_time
+            ui_status.markdown(f"✅ 녹음 완료 &nbsp;&nbsp; ⏱️ **{elapsed_total:.1f}초**")
+            audio_path = shared_state["path"]
+
+            if audio_path:
+                with st.spinner("답변 인식 중..."):
+                    answer_text = transcribe(
+                        audio_path,
+                        model_size=st.session_state.get("whisper_model", "medium")
+                    )
+                    cleanup_audio_file(audio_path)
+
+                if answer_text:
+                    st.session_state.history.append({
+                        "role": "user",
+                        "content": answer_text
+                    })
+                    st.session_state.turn += 1
+
+                    if st.session_state.turn >= 10:
+                        closing = "수고하셨습니다. 오늘 면접은 여기서 마치겠습니다. 좋은 결과 있으시길 바랍니다."
+                        st.session_state.history.append({
+                            "role": "assistant",
+                            "content": closing
+                        })
+                        speak(closing)
+                        st.session_state.finished = True
+                    else:
+                        with st.spinner("면접관이 생각 중..."):
+                            next_q = get_next_question(
+                                st.session_state.history,
+                                job_info=st.session_state.get("job_info")
+                            )
+                            st.session_state.history.append({
+                                "role": "assistant",
+                                "content": next_q
+                            })
+                            speak(next_q)
+
+                    st.rerun()
+                else:
+                    st.warning("답변이 인식되지 않았습니다. 다시 시도해주세요.")
+            else:
+                st.warning("녹음에 실패했습니다. 다시 시도해주세요.")
 
 
 if __name__ == "__main__":
