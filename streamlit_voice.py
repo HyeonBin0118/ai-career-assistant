@@ -6,6 +6,7 @@ import sys
 import os
 import threading
 import time
+import json
 
 sys.path.append(os.path.dirname(__file__))
 
@@ -64,6 +65,77 @@ def get_next_question(conversation_history: list, job_info: dict = None) -> str:
     return response.choices[0].message.content
 
 
+def generate_report(conversation_history: list, job_info: dict = None) -> dict:
+    job_context = f"직무: {job_info.get('position', '')} / 회사: {job_info.get('company', '')}" if job_info else ""
+    response = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[
+            {"role": "system", "content": "당신은 면접 평가 전문가입니다. 면접 대화를 분석해서 JSON으로 평가 결과를 반환합니다."},
+            {"role": "user", "content": f"""
+아래 면접 대화를 분석해서 JSON으로 평가해줘.
+{job_context}
+
+평가 항목 (각 0~10점):
+- tech: 기술 이해도
+- specificity: 답변 구체성
+- logic: 논리 구조
+- communication: 커뮤니케이션
+
+그리고:
+- total: 총점 (0~100)
+- strengths: 잘한 점 2개 (리스트)
+- improvements: 개선할 점 2개 (리스트)
+- summary: 한 줄 총평
+
+JSON만 반환해.
+
+대화:
+{json.dumps(conversation_history, ensure_ascii=False)}
+"""}
+        ],
+        temperature=0
+    )
+    result = response.choices[0].message.content.replace("```json", "").replace("```", "").strip()
+    return json.loads(result)
+
+
+def handle_answer(answer_text: str):
+    """답변 처리 공통 로직"""
+    st.session_state.history.append({
+        "role": "user",
+        "content": answer_text
+    })
+    st.session_state.turn += 1
+
+    if st.session_state.turn >= 10:
+        closing = "수고하셨습니다. 오늘 면접은 여기서 마치겠습니다. 좋은 결과 있으시길 바랍니다."
+        st.session_state.history.append({
+            "role": "assistant",
+            "content": closing
+        })
+        speak(closing)
+        with st.spinner("면접 결과 분석 중..."):
+            report = generate_report(
+                st.session_state.history,
+                job_info=st.session_state.get("job_info")
+            )
+            st.session_state.report = report
+        st.session_state.finished = True
+    else:
+        with st.spinner("면접관이 생각 중..."):
+            next_q = get_next_question(
+                st.session_state.history,
+                job_info=st.session_state.get("job_info")
+            )
+            st.session_state.history.append({
+                "role": "assistant",
+                "content": next_q
+            })
+            speak(next_q)
+
+    st.rerun()
+
+
 def run_interview():
     st.title("🎤 AI 음성 면접 시뮬레이터")
 
@@ -105,7 +177,6 @@ def run_interview():
         st.session_state.silence_threshold = threshold_options[selected_threshold]
         st.caption("값이 높을수록 더 쉽게 무음으로 판단합니다.")
 
-        #마이크 없는 경우 테스트용 텍스트 입력으로 진행 
         st.markdown("### ⌨️ 입력 방식")
         input_mode = st.radio(
             "답변 입력 방식",
@@ -113,8 +184,6 @@ def run_interview():
             index=1
         )
         st.session_state.input_mode = input_mode
-    
-    
 
     if "started" not in st.session_state:
         st.session_state.started = False
@@ -122,6 +191,7 @@ def run_interview():
         st.session_state.turn = 0
         st.session_state.finished = False
         st.session_state.job_info = None
+        st.session_state.report = None
 
     if not st.session_state.started:
         st.markdown("면접 정보를 입력하고 시작하세요.")
@@ -157,6 +227,35 @@ def run_interview():
 
     if st.session_state.finished:
         st.success("면접이 종료되었습니다.")
+
+        report = st.session_state.get("report", {})
+        if report:
+            st.markdown("### 📊 면접 평가 리포트")
+
+            col1, col2 = st.columns(2)
+            with col1:
+                st.metric("기술 이해도", f"{report.get('tech', 0)}/10")
+                st.metric("논리 구조", f"{report.get('logic', 0)}/10")
+            with col2:
+                st.metric("답변 구체성", f"{report.get('specificity', 0)}/10")
+                st.metric("커뮤니케이션", f"{report.get('communication', 0)}/10")
+
+            total = report.get("total", 0)
+            st.markdown(f"### 🏆 총점: {total}/100")
+            st.progress(total / 100)
+
+            st.markdown(f"**💬 총평:** {report.get('summary', '')}")
+
+            st.markdown("**✅ 잘한 점**")
+            for s in report.get("strengths", []):
+                st.markdown(f"- {s}")
+
+            st.markdown("**📈 개선할 점**")
+            for i in report.get("improvements", []):
+                st.markdown(f"- {i}")
+
+            st.divider()
+
         st.markdown("### 📋 대화 기록")
         for msg in st.session_state.history:
             role_label = "🤵 면접관" if msg["role"] == "assistant" else "🙋 나"
@@ -184,32 +283,7 @@ def run_interview():
         if st.button("제출"):
             answer_text = text_answer.strip()
             if answer_text:
-                st.session_state.history.append({
-                    "role": "user",
-                    "content": answer_text
-                })
-                st.session_state.turn += 1
-
-                if st.session_state.turn >= 10:
-                    closing = "수고하셨습니다. 오늘 면접은 여기서 마치겠습니다. 좋은 결과 있으시길 바랍니다."
-                    st.session_state.history.append({
-                        "role": "assistant",
-                        "content": closing
-                    })
-                    speak(closing)
-                    st.session_state.finished = True
-                else:
-                    with st.spinner("면접관이 생각 중..."):
-                        next_q = get_next_question(
-                            st.session_state.history,
-                            job_info=st.session_state.get("job_info")
-                        )
-                        st.session_state.history.append({
-                            "role": "assistant",
-                            "content": next_q
-                        })
-                        speak(next_q)
-                st.rerun()
+                handle_answer(answer_text)
             else:
                 st.warning("답변을 입력해주세요.")
     else:
@@ -256,33 +330,7 @@ def run_interview():
                     cleanup_audio_file(audio_path)
 
                 if answer_text:
-                    st.session_state.history.append({
-                        "role": "user",
-                        "content": answer_text
-                    })
-                    st.session_state.turn += 1
-
-                    if st.session_state.turn >= 10:
-                        closing = "수고하셨습니다. 오늘 면접은 여기서 마치겠습니다. 좋은 결과 있으시길 바랍니다."
-                        st.session_state.history.append({
-                            "role": "assistant",
-                            "content": closing
-                        })
-                        speak(closing)
-                        st.session_state.finished = True
-                    else:
-                        with st.spinner("면접관이 생각 중..."):
-                            next_q = get_next_question(
-                                st.session_state.history,
-                                job_info=st.session_state.get("job_info")
-                            )
-                            st.session_state.history.append({
-                                "role": "assistant",
-                                "content": next_q
-                            })
-                            speak(next_q)
-
-                    st.rerun()
+                    handle_answer(answer_text)
                 else:
                     st.warning("답변이 인식되지 않았습니다. 다시 시도해주세요.")
             else:
