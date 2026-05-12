@@ -8,55 +8,63 @@
 - [x] 카테고리별 약점 분석, 반복 연습 점수 추이, 면접 완료 리포트
 - [x] Redis 캐싱 성능 측정 (25% 응답시간 단축 확인)
 - [x] 평가 일관성 및 프롬프트 개선 효과 정량 테스트
+- [x] Celery 비동기 처리 (30초 → 2.1초, 93% 단축)
+- [x] GitHub Actions CI 구성
+- [x] Edge-TTS 기반 면접관 음성 출력
+- [x] Whisper STT 한국어 음성 인식
+- [x] GPT-4o-mini 꼬리질문 대화 루프
+- [x] Streamlit 음성 면접 UI (streamlit_voice.py)
+- [x] 사이드바 설정 (마이크 선택 / STT 모델 선택 / 무음 감지 임계값)
+- [x] 실시간 스펙트럼 시각화 + 답변 시간 측정
 
 ---
 
-## Phase 1 — CI/CD (GitHub Actions)
+## Phase 1 — 음성 면접 고도화 (진행 중)
 
-**목표:** 코드를 push하면 테스트와 빌드가 자동으로 실행되도록 구성
+**목표:** 음성 대화형 면접 시뮬레이터 완성도 높이기
 
 **할 것:**
-- `.github/workflows/ci.yml` 작성
-- push 시 pytest 자동 실행
-- Docker 이미지 자동 빌드 확인
 
-**기대 효과:** 매번 수동으로 테스트하던 과정 자동화, 배포 파이프라인의 시작점
+- [ ] 에어팟/블루투스 마이크 인식 문제 해결
+- [ ] STT 정확도 검증 (Whisper medium 모델 — 마이크 문제 해결 후 검증 필요)
+- [ ] 채용공고 URL 연동 → 공고 맞춤 질문 생성
+- [ ] 면접 종료 후 평가 리포트 (항목별 점수 + 피드백)
+- [ ] 대화 기록 PostgreSQL 저장
+
+**기대 효과:** 실사용 가능한 음성 면접 시뮬레이터 완성
 
 ---
 
 ## Phase 2 — AWS 배포
 
-**목표:** localhost:8000을 실제 URL로 공개
+**목표:** localhost를 실제 URL로 공개
 
 **할 것:**
-- AWS EC2 프리티어 인스턴스 생성
-- EC2에 Docker + Docker Compose 설치
-- GitHub Actions와 연결해 push 시 EC2 자동 배포
-- HTTPS 설정 (Let's Encrypt)
 
-**기대 효과:** "배포된 서비스"로 포트폴리오에 라이브 데모 링크 추가 가능
+- [ ] AWS EC2 프리티어 인스턴스 생성
+- [ ] EC2에 Docker + Docker Compose 설치
+- [ ] GitHub Actions와 연결해 push 시 EC2 자동 배포
+- [ ] HTTPS 설정 (Let's Encrypt)
+
+**기대 효과:** 포트폴리오에 라이브 데모 링크 추가 가능
 
 ---
 
-## Phase 3 — 비동기 처리 (Celery + Redis)
+## Phase 3 — 고도화
 
-**목표:** Whisper 음성 변환을 백그라운드 작업으로 분리
-
-**현재 문제:** 음성 파일 업로드 시 변환이 완료될 때까지 사용자가 대기
-**개선 후:** 업로드 즉시 응답, 백그라운드에서 변환 진행, 완료 시 결과 조회
+**목표:** 포트폴리오 차별화 요소 추가
 
 **할 것:**
-- Celery 워커 설정
-- Redis를 메시지 브로커로 활용 (현재 캐시 용도 → 큐 용도 추가)
-- Docker Compose에 Celery 워커 컨테이너 추가
-- 비동기 전/후 응답시간 측정 및 README에 결과 기록
 
-**기대 효과:** Redis를 캐시 + 메시지 큐 두 가지 용도로 활용한 경험, 비동기 아키텍처 이해
+- [ ] async SQLAlchemy 전환 (동시 요청 처리 개선)
+- [ ] WebSocket 기반 실시간 진행률 전송 (현재 0.5초 폴링 → 서버 푸시)
+- [ ] Rubric 기반 평가 체계 명시화 (질문 연관성 / 구체성 / 논리 구조 / 시간 안배)
+- [ ] Human Evaluation 실험 (GPT 평가와 실제 평가 상관계수 측정)
 
 ---
 
 ## 참고
 
-- Phase 1 → 2는 순서대로 진행 (Actions가 배포 자동화의 기반)
-- Phase 3은 독립적으로 진행 가능
+- Phase 1 음성 면접 완성 → Phase 2 배포 순으로 진행
+- Phase 3은 배포 이후 독립적으로 추가
 - 각 Phase 완료 후 README 업데이트 및 정량 측정 결과 기록
