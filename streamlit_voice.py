@@ -7,6 +7,7 @@ import os
 import threading
 import time
 import json
+import requests
 
 sys.path.append(os.path.dirname(__file__))
 
@@ -17,6 +18,8 @@ from openai import OpenAI
 from app.services.interview import crawl_job_posting, extract_job_info
 
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+API_BASE = "http://localhost:8000/api/v1"
 
 SYSTEM_PROMPT = """당신은 IT 기업의 시니어 개발자 면접관입니다.
 다음 규칙을 반드시 지키세요:
@@ -99,8 +102,8 @@ JSON만 반환해.
     result = response.choices[0].message.content.replace("```json", "").replace("```", "").strip()
     return json.loads(result)
 
+
 def save_to_db(name: str, role: str, job_info: dict, conversation: list, report: dict):
-    import requests
     payload = {
         "name": name,
         "role": role,
@@ -111,25 +114,19 @@ def save_to_db(name: str, role: str, job_info: dict, conversation: list, report:
         "report": report
     }
     try:
-        res = requests.post("http://localhost:8000/api/v1/sessions/voice", json=payload)
+        res = requests.post(f"{API_BASE}/sessions/voice", json=payload)
         return res.json()
     except Exception as e:
         return {"error": str(e)}
 
+
 def handle_answer(answer_text: str):
-    """답변 처리 공통 로직"""
-    st.session_state.history.append({
-        "role": "user",
-        "content": answer_text
-    })
+    st.session_state.history.append({"role": "user", "content": answer_text})
     st.session_state.turn += 1
 
     if st.session_state.turn >= 10:
         closing = "수고하셨습니다. 오늘 면접은 여기서 마치겠습니다. 좋은 결과 있으시길 바랍니다."
-        st.session_state.history.append({
-            "role": "assistant",
-            "content": closing
-        })
+        st.session_state.history.append({"role": "assistant", "content": closing})
         speak(closing)
         with st.spinner("면접 결과 분석 중..."):
             report = generate_report(
@@ -148,34 +145,70 @@ def handle_answer(answer_text: str):
             if "error" not in save_result:
                 st.session_state.saved_session_id = save_result.get("session_id")
         st.session_state.finished = True
-
     else:
         with st.spinner("면접관이 생각 중..."):
             next_q = get_next_question(
                 st.session_state.history,
                 job_info=st.session_state.get("job_info")
             )
-            st.session_state.history.append({
-                "role": "assistant",
-                "content": next_q
-            })
+            st.session_state.history.append({"role": "assistant", "content": next_q})
             speak(next_q)
 
     st.rerun()
 
 
+def show_history():
+    st.title("📋 면접 기록")
+
+    try:
+        res = requests.get(f"{API_BASE}/sessions?limit=20")
+        sessions = res.json()
+    except Exception as e:
+        st.error(f"기록을 불러올 수 없습니다: {e}")
+        return
+
+    if not sessions:
+        st.info("저장된 면접 기록이 없습니다.")
+        return
+
+    for s in sessions:
+        created = s.get("created_at", "")[:10]
+        company = s.get("company") or "회사 미상"
+        position = s.get("position") or "직무 미상"
+        session_id = s.get("id")
+
+        with st.expander(f"#{session_id} | {company} — {position} | {created}"):
+            try:
+                detail = requests.get(f"{API_BASE}/sessions/{session_id}/history").json()
+                questions = detail.get("questions", [])
+                for q in questions:
+                    st.markdown(f"**🤵 면접관:** {q.get('question_text', '')}")
+                    for a in q.get("answers", []):
+                        st.markdown(f"**🙋 나:** {a.get('answer_text', '')}")
+                        if a.get("evaluation"):
+                            score = a["evaluation"].get("total_score")
+                            feedback = a["evaluation"].get("feedback", "")
+                            if score is not None:
+                                st.caption(f"점수: {score}점 | {feedback}")
+                    st.divider()
+            except Exception as e:
+                st.error(f"상세 기록 로드 실패: {e}")
+
+
 def run_interview():
-    st.title("🎤 AI 음성 면접 시뮬레이터")
-
-    import sounddevice as sd
-    devices = sd.query_devices()
-    input_devices = {
-        f"{i}: {d['name']}": i
-        for i, d in enumerate(devices)
-        if d['max_input_channels'] > 0
-    }
-
     with st.sidebar:
+        st.markdown("## 📌 메뉴")
+        page = st.radio("", ["🎤 면접 시작", "📋 기록 보기"], label_visibility="collapsed")
+        st.divider()
+
+        import sounddevice as sd
+        devices = sd.query_devices()
+        input_devices = {
+            f"{i}: {d['name']}": i
+            for i, d in enumerate(devices)
+            if d['max_input_channels'] > 0
+        }
+
         st.markdown("### 🎙️ 마이크 설정")
         selected = st.selectbox("마이크 선택", list(input_devices.keys()))
         st.session_state.mic_index = input_devices[selected]
@@ -213,6 +246,12 @@ def run_interview():
         )
         st.session_state.input_mode = input_mode
 
+    if page == "📋 기록 보기":
+        show_history()
+        return
+
+    st.title("🎤 AI 음성 면접 시뮬레이터")
+
     if "started" not in st.session_state:
         st.session_state.started = False
         st.session_state.history = []
@@ -241,10 +280,7 @@ def run_interview():
 
             with st.spinner("면접관이 준비 중입니다..."):
                 first_question = get_opening_question(name, role, job_info)
-                st.session_state.history.append({
-                    "role": "assistant",
-                    "content": first_question
-                })
+                st.session_state.history.append({"role": "assistant", "content": first_question})
                 st.session_state.name = name
                 st.session_state.role = role
                 st.session_state.job_info = job_info
@@ -261,7 +297,6 @@ def run_interview():
         report = st.session_state.get("report", {})
         if report:
             st.markdown("### 📊 면접 평가 리포트")
-
             col1, col2 = st.columns(2)
             with col1:
                 st.metric("기술 이해도", f"{report.get('tech', 0)}/10")
@@ -273,7 +308,6 @@ def run_interview():
             total = report.get("total", 0)
             st.markdown(f"### 🏆 총점: {total}/100")
             st.progress(total / 100)
-
             st.markdown(f"**💬 총평:** {report.get('summary', '')}")
 
             st.markdown("**✅ 잘한 점**")
