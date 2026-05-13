@@ -49,6 +49,66 @@ def list_sessions(skip: int = 0, limit: int = 20, db: Session = Depends(get_db))
     return result
 
 
+class VoiceInterviewSave(BaseModel):
+    name: str
+    role: str
+    job_url: str = ""
+    company: str = ""
+    position: str = ""
+    conversation: list
+    report: dict
+
+
+@router.post("/sessions/voice")
+def save_voice_session(body: VoiceInterviewSave, db: Session = Depends(get_db)):
+    try:
+        session = models.InterviewSession(
+            resume_text=f"음성 면접 참여자: {body.name}",
+            job_url=body.job_url or "직접 입력",
+            company=body.company or body.role,
+            position=body.position or body.role,
+        )
+        db.add(session)
+        db.flush()
+
+        for i, msg in enumerate(body.conversation):
+            if msg["role"] == "user":
+                question_before = next(
+                    (m["content"] for m in reversed(body.conversation[:i]) if m["role"] == "assistant"),
+                    "질문 없음"
+                )
+                question = models.Question(
+                    session_id=session.id,
+                    category="음성 면접",
+                    question_text=question_before,
+                )
+                db.add(question)
+                db.flush()
+
+                answer = models.Answer(
+                    question_id=question.id,
+                    answer_text=msg["content"],
+                )
+                db.add(answer)
+                db.flush()
+
+                evaluation = models.EvaluationResult(
+                    answer_id=answer.id,
+                    total_score=body.report.get("total", 0),
+                    feedback=body.report.get("summary", ""),
+                )
+                db.add(evaluation)
+
+        db.commit()
+        db.refresh(session)
+        return {"session_id": session.id, "message": "저장 완료"}
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.get("/sessions/{session_id}", response_model=SessionOut)
 def get_session(session_id: int, db: Session = Depends(get_db)):
     session = db.query(models.InterviewSession).filter(
@@ -102,6 +162,7 @@ def get_category_stats(session_id: int, db: Session = Depends(get_db)):
         })
 
     return {"session_id": session_id, "categories": result}
+
 
 @router.get("/sessions/{session_id}/report")
 def get_session_report(session_id: int, db: Session = Depends(get_db)):

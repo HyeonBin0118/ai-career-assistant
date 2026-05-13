@@ -26,7 +26,8 @@ SYSTEM_PROMPT = """당신은 IT 기업의 시니어 개발자 면접관입니다
 - "~하셨군요. 그렇다면 ~는 어떻게 하셨나요?" 형태를 자주 사용하세요
 - 압박보다는 대화하듯 자연스럽게 진행하세요
 - 답변이 구체적이면 다음 주제로 넘어가세요
-- 10턴이 지나면 면접을 마무리하세요"""
+- 10턴이 지나면 면접을 마무리하세요
+- 반드시 자연스러운 한국어로만 질문하세요"""
 
 
 def build_job_context(job_info: dict) -> str:
@@ -98,6 +99,22 @@ JSON만 반환해.
     result = response.choices[0].message.content.replace("```json", "").replace("```", "").strip()
     return json.loads(result)
 
+def save_to_db(name: str, role: str, job_info: dict, conversation: list, report: dict):
+    import requests
+    payload = {
+        "name": name,
+        "role": role,
+        "job_url": "",
+        "company": job_info.get("company", "") if job_info else "",
+        "position": job_info.get("position", role) if job_info else role,
+        "conversation": conversation,
+        "report": report
+    }
+    try:
+        res = requests.post("http://localhost:8000/api/v1/sessions/voice", json=payload)
+        return res.json()
+    except Exception as e:
+        return {"error": str(e)}
 
 def handle_answer(answer_text: str):
     """답변 처리 공통 로직"""
@@ -120,7 +137,18 @@ def handle_answer(answer_text: str):
                 job_info=st.session_state.get("job_info")
             )
             st.session_state.report = report
+        with st.spinner("면접 기록 저장 중..."):
+            save_result = save_to_db(
+                name=st.session_state.get("name", ""),
+                role=st.session_state.get("role", ""),
+                job_info=st.session_state.get("job_info"),
+                conversation=st.session_state.history,
+                report=report
+            )
+            if "error" not in save_result:
+                st.session_state.saved_session_id = save_result.get("session_id")
         st.session_state.finished = True
+
     else:
         with st.spinner("면접관이 생각 중..."):
             next_q = get_next_question(
@@ -227,6 +255,8 @@ def run_interview():
 
     if st.session_state.finished:
         st.success("면접이 종료되었습니다.")
+        if st.session_state.get("saved_session_id"):
+            st.info(f"📁 면접 기록이 저장되었습니다. (세션 ID: {st.session_state.saved_session_id})")
 
         report = st.session_state.get("report", {})
         if report:
