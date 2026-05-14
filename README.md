@@ -118,10 +118,6 @@ InterviewSession → Question → Answer → EvaluationResult
 
 ---
 
-## API 명세: [API.md](./API.md)
-
----
-
 ## 사용 흐름
 
 ```
