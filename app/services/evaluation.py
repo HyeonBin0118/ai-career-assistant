@@ -6,9 +6,7 @@ client = OpenAI(api_key=settings.OPENAI_API_KEY)
 
 
 def transcribe_audio(audio_file_path: str) -> str:
-    """
-    Whisper API로 음성 파일을 텍스트로 변환한다.
-    """
+    """Whisper API로 음성 파일을 텍스트로 변환"""
     with open(audio_file_path, "rb") as f:
         transcript = client.audio.transcriptions.create(
             model="whisper-1",
@@ -18,16 +16,12 @@ def transcribe_audio(audio_file_path: str) -> str:
     return transcript.text
 
 
-def evaluate_answer(question_text: str, answer_text: str, duration_seconds: float) -> dict:
-    if duration_seconds < 30:
-        time_score = 1
-    elif duration_seconds < 60:
-        time_score = 3
-    elif duration_seconds <= 120:
-        time_score = 5
-    else:
-        time_score = 2
-
+def evaluate_answer(question_text: str, answer_text: str, duration_seconds: float = 60.0) -> dict:
+    """
+    면접 답변 평가 (논리성 + 구체성).
+    텍스트 입력 방식이므로 시간 점수 제외.
+    total_score = logic_score + specificity_score (최대 10점)
+    """
     response = client.chat.completions.create(
         model="gpt-4o-mini",
         messages=[{"role": "user", "content": f"""
@@ -46,18 +40,18 @@ def evaluate_answer(question_text: str, answer_text: str, duration_seconds: floa
   * 1점: 구체적 사례/수치/기술명 전혀 없음
   * 3점: 일부 구체적 내용 포함
   * 5점: 구체적 수치, 사례, 기술명 풍부하게 포함
-- total_score: logic_score + specificity_score + {time_score} (시간 점수 고정)
-- feedback: 한 줄 개선 피드백 (질문과 무관한 답변이면 그 점을 명확히 지적)
+- total_score: logic_score + specificity_score (최대 10점)
+- feedback: 한 줄 개선 피드백
 
 질문: {question_text}
 답변: {answer_text}
 
-JSON만 반환해. time_score는 반드시 {time_score}로 고정해.
+logic_score, specificity_score, total_score, feedback 4개 키만 포함한 JSON만 반환해.
 """}],
-        temperature=0
+        temperature=0,
     )
     result = response.choices[0].message.content.replace("```json", "").replace("```", "").strip()
     data = json.loads(result)
-    data['time_score'] = time_score
-    data['total_score'] = data.get('logic_score', 0) + data.get('specificity_score', 0) + time_score
+    data["time_score"] = None
+    data["total_score"] = data.get("logic_score", 0) + data.get("specificity_score", 0)
     return data

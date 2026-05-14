@@ -133,7 +133,7 @@ def generate_voice_report(history: list, job_info: dict = None) -> dict:
 - communication: 커뮤니케이션
 
 그리고:
-- total: 총점 (0~100)
+- total: 총점 (0~50)
 - strengths: 잘한 점 2개 (리스트)
 - improvements: 개선할 점 2개 (리스트)
 - summary: 한 줄 총평
@@ -168,16 +168,24 @@ def save_voice_to_db(name: str, role: str, job_info: dict, conversation: list, r
 def render_sidebar() -> str:
     """사이드바 렌더링. 선택된 페이지 반환."""
     with st.sidebar:
-        st.markdown("## 🤖 AI Career Assistant")
+        st.markdown("""
+            <div style="text-align:center; padding: 10px 0;">
+                <div style="font-size:2rem;">😊</div>
+                <div style="font-size:1.1rem; font-weight:700; color:white; margin-top:8px;">Have a Nice Day!</div>
+            </div>
+            """, unsafe_allow_html=True)
+
+        st.markdown("---")
+        st.markdown("**📌 메뉴**")
         page = st.radio(
             "메뉴",
             ["🏠 홈", "📝 자소서 작성", "🎤 텍스트 기반 면접", "🗣️ 음성 대화형 면접", "📋 연습 기록"],
             label_visibility="collapsed",
-        )
+            )
         st.divider()
 
         # 마이크 설정 (면접 관련 페이지에서만 표시)
-        if "면접" in page or "음성" in page:
+        if "음성 대화형" in page:
             devices = sd.query_devices()
             input_devices = {
                 f"{i}: {d['name']}": i
@@ -223,11 +231,8 @@ def render_sidebar() -> str:
 # ──────────────────────────────────────────────
 
 def show_home():
-    """홈 화면 - 전체 서비스 흐름 안내"""
-    st.title("🤖 AI Career Assistant")
-    st.markdown("채용공고 분석부터 자소서 작성, 면접 연습, 평가 리포트까지 한 세션에서.")
+    st.image("images/banner.png", width=600)
     st.divider()
-
     st.markdown("### 📝 자소서 작성")
     st.markdown("""
 채용공고 URL과 이력서를 입력하면 공고 맞춤형 자소서 초안을 자동 생성합니다.
@@ -305,8 +310,9 @@ def show_cover_letter():
             with st.spinner("자소서 생성 중... (30초 정도 걸려요)"):
                 # 세션 생성
                 session_data = api_post("sessions", json={"job_url": job_url, "resume_text": resume_text})
-                if "error" in session_data:
-                    st.error(f"세션 생성 실패: {session_data['error']}")
+                
+                if "id" not in session_data:
+                    st.error("세션 생성 실패")
                     return
 
                 st.session_state.cover_session_id = session_data["id"]
@@ -429,79 +435,22 @@ def show_text_interview():
         st.markdown(f"{badge} **{q.get('category', '')}**")
         st.info(q.get("question_text", ""))
 
-        # 답변 방식 선택
-        answer_method = st.radio("답변 방식", ["🎙️ 마이크 녹음", "📁 파일 업로드", "✏️ 텍스트 직접 입력"], horizontal=True)
-
-        if answer_method == "🎙️ 마이크 녹음":
-            if st.button("🎙️ 녹음 시작 (말이 끝나면 자동 종료)"):
-                shared_state = {"level": 0.0, "done": False, "path": None}
-
-                def _record():
-                    shared_state["path"] = record_until_silence(
-                        device_index=st.session_state.get("mic_index"),
-                        shared_state=shared_state,
-                        silence_threshold=st.session_state.get("silence_threshold", 0.02),
-                    )
-                    shared_state["done"] = True
-
-                t = threading.Thread(target=_record)
-                t.start()
-                ui = st.empty()
-                start = time.time()
-                while not shared_state["done"]:
-                    elapsed = time.time() - start
-                    bars = min(int(shared_state["level"] * 400), 20)
-                    ui.markdown(f"🎙️ **녹음 중** ⏱️ **{elapsed:.1f}초**\n\n`{'█' * bars}{'░' * (20 - bars)}`")
-                    time.sleep(0.05)
-                t.join()
-                ui.markdown(f"✅ 녹음 완료 ({time.time() - start:.1f}초)")
-
-                audio_path = shared_state["path"]
-                if audio_path:
-                    with st.spinner("Whisper 변환 중..."):
-                        text = transcribe(audio_path, st.session_state.get("whisper_model", "medium"))
-                        cleanup_audio_file(audio_path)
-                    if text:
-                        st.session_state.text_transcript = text
-                        st.session_state.text_duration = int(time.time() - start)
-
-            # STT 결과 편집
-            if "text_transcript" in st.session_state:
-                edited = st.text_area("인식된 텍스트 (수정 가능)", st.session_state.text_transcript, height=100)
-                if st.button("이 내용으로 평가받기"):
-                    _submit_text_answer(q["id"], edited, st.session_state.get("text_duration", 0))
-
-        elif answer_method == "📁 파일 업로드":
-            audio_file = st.file_uploader("오디오 파일", type=["mp3", "wav", "m4a", "webm"])
-            if audio_file and st.button("파일로 평가받기"):
-                with st.spinner("업로드 중..."):
-                    result = api_post(f"questions/{q['id']}/answers", files={"audio": audio_file})
-                    if "error" in result:
-                        st.error(result["error"])
-                    else:
-                        with st.spinner("음성 분석 중... (백그라운드 처리)"):
-                            poll_result = poll_answer_status(result["answer_id"])
-                        if "error" not in poll_result:
-                            _show_text_feedback(poll_result, q)
-
-        elif answer_method == "✏️ 텍스트 직접 입력":
-            direct_text = st.text_area("답변을 직접 입력하세요", height=100)
-            if st.button("제출"):
-                if direct_text.strip():
-                    _submit_text_answer(q["id"], direct_text.strip(), 0)
-                else:
-                    st.warning("답변을 입력해주세요.")
+        direct_text = st.text_area("답변을 입력하세요", height=100, placeholder="질문에 대한 답변을 입력하세요...")
+        if st.button("제출"):
+            if direct_text.strip():
+                _submit_text_answer(q["id"], direct_text.strip(), 0)
+            else:
+                st.warning("답변을 입력해주세요.")
 
         # 피드백 표시
         if "text_feedback" in st.session_state:
             feedback = st.session_state.text_feedback
             st.divider()
             st.markdown("### 📊 답변 평가")
-            col1, col2, col3, col4 = st.columns(4)
-            col1.metric("논리성", f"{feedback.get('logic_score', 0)}")
-            col2.metric("구체성", f"{feedback.get('specificity_score', 0)}")
-            col3.metric("시간 관리", f"{feedback.get('time_score', 0)}")
-            col4.metric("총점", f"{feedback.get('total_score', 0)}/15")
+            col1, col2, col3 = st.columns(3)
+            col1.metric("논리성", f"{feedback.get('logic_score', 0)}/5")
+            col2.metric("구체성", f"{feedback.get('specificity_score', 0)}/5")
+            col3.metric("총점", f"{feedback.get('total_score', 0)}/10")
             st.success(f"💬 {feedback.get('feedback', '')}")
 
             # 모범 답안
@@ -717,8 +666,8 @@ def show_voice_interview():
                 st.metric("답변 구체성", f"{report.get('specificity', 0)}/10")
                 st.metric("커뮤니케이션", f"{report.get('communication', 0)}/10")
             total = report.get("total", 0)
-            st.markdown(f"### 🏆 총점: {total}/100")
-            st.progress(total / 100)
+            st.markdown(f"### 🏆 총점: {total}/50")
+            st.progress(total / 50)
             st.markdown(f"**💬 총평:** {report.get('summary', '')}")
             st.markdown("**✅ 잘한 점**")
             for s in report.get("strengths", []):
