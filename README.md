@@ -21,6 +21,10 @@
 
 기술 의사결정 상세: [TECH_DECISIONS](https://github.com/HyeonBin0118/ai-career-assistant-notes)
 
+## 🎬 데모 영상
+
+[![AI 음성 면접 시뮬레이터 데모](https://img.youtube.com/vi/gNBGeOUz5qk/0.jpg)](https://youtu.be/gNBGeOUz5qk)
+
 ---
 
 ## 핵심 성과
