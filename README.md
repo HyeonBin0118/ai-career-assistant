@@ -14,7 +14,7 @@
 ![GPT](https://img.shields.io/badge/GPT--4o--mini-412991?style=flat-square&logo=openai&logoColor=white)
 ![Pytest](https://img.shields.io/badge/Pytest-0A9EDC?style=flat-square&logo=pytest&logoColor=white)
 ![GitHub Actions](https://img.shields.io/badge/GitHub_Actions-2088FF?style=flat-square&logo=githubactions&logoColor=white)
-
+![AWS](https://img.shields.io/badge/AWS_EC2-FF9900?style=flat-square&logo=amazonaws&logoColor=white)
 채용공고 분석부터 자소서 작성, 면접 연습, 음성 대화형 면접까지 한 세션에서 완결되는 AI 취업 지원 플랫폼.
 
 [Job Agent 시리즈](https://github.com/HyeonBin0118/job-agent-v3)와 [Mock Interview AI](https://github.com/HyeonBin0118/mock-interview-ai)를 하나의 백엔드로 통합하면서, FastAPI + 비동기 처리 구조로 재설계한 프로젝트.
