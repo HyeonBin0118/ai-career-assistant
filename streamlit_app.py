@@ -751,7 +751,7 @@ def show_history():
                                 cols[2].metric("시간", ev.get("time_score"))
                                 cols[3].metric("총점", f"{ev.get('total_score')}/15")
                             elif ev.get("total_score") is not None:
-                                cols[0].metric("총점", f"{ev.get('total_score')}/100")
+                                cols[0].metric("총점", f"{ev.get('total_score')}/50")
                             if ev.get("feedback"):
                                 st.caption(f"💬 {ev['feedback']}")
                     st.divider()
