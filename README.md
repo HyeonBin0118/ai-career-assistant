@@ -21,6 +21,11 @@
 
 기술 의사결정 상세: [TECH_DECISIONS](https://github.com/HyeonBin0118/ai-career-assistant-notes)
 
+## 🌐 라이브 데모
+
+- **Streamlit UI:** http://43.200.8.205:8501
+- **API 문서:** http://43.200.8.205:8000/docs
+
 ## 🎬 데모 영상
 
 [![AI 음성 면접 시뮬레이터 데모](https://img.youtube.com/vi/gNBGeOUz5qk/0.jpg)](https://youtu.be/gNBGeOUz5qk)
