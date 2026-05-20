@@ -1,4 +1,14 @@
+import pytest
 import requests
+
+
+def is_server_running():
+    try:
+        requests.get("http://localhost:8000/health", timeout=1)
+        return True
+    except Exception:
+        return False
+
 
 payload = {
     "name": "테스트",
@@ -30,6 +40,10 @@ payload = {
     }
 }
 
-res = requests.post("http://localhost:8000/api/v1/sessions/voice", json=payload)
-print(res.status_code)
-print(res.json())
+
+@pytest.mark.skipif(not is_server_running(), reason="서버 미실행 (CI 환경 스킵)")
+def test_voice_save():
+    res = requests.post("http://localhost:8000/api/v1/sessions/voice", json=payload)
+    assert res.status_code == 200
+    print(res.status_code)
+    print(res.json())
